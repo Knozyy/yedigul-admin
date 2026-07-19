@@ -1,0 +1,29 @@
+{
+  "name": "yedigul-local-admin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n controller,ui -c blue,green \"npm:dev:server\" \"npm:dev:ui\"",
+    "dev:server": "node --watch server/index.js",
+    "dev:ui": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "panel": "npm run build && node server/index.js",
+    "test": "node --test server/test/*.test.js",
+    "lint": "oxlint src server"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.2.1",
+    "oxlint": "^1.39.0",
+    "vite": "^7.2.4"
+  }
+}
