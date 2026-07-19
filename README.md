@@ -35,7 +35,9 @@ npm run dev
 Arayüz: `http://127.0.0.1:4311/`  
 Kontrol katmanı: `http://127.0.0.1:4310/`
 
-Depodaki yerel `.env` geliştirme modundadır ve yalnızca `127.0.0.1:3001` adresine bağlanır. Git'e dahil edilmez.
+Doğrudan lokal backend ile geliştirmek için `.env` içinde `SSH_ENABLED=0` ve
+`REMOTE_ADMIN_BASE_URL=http://127.0.0.1:3001` kullanılır. Canlı kullanımda
+`SSH_ENABLED=1` olmalıdır. Gerçek `.env` Git'e dahil edilmez.
 
 ## Tek komutla panel
 
