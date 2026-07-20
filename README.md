@@ -8,7 +8,7 @@ Panel dış ağ arayüzüne bağlanmaz. Tarayıcı, canlı sunucuyla doğrudan k
 
 - Genel bakış, istatistik ve değişiklik geçmişi
 - Ürün listeleme, arama, ekleme, düzenleme ve silme
-- Dört dilde ad/açıklama/içindekiler/alerjen yönetimi
+- Dört dilde ad/açıklama/içindekiler/alerjen yönetimi; AR/RU eksik filtresi ve güvenli EN → TR fallback
 - Kalori, porsiyon, diyet etiketleri, fiyat seçenekleri ve günlük piyasa fiyatı
 - En çok 6 görsellik galeri; kapak seçme, sıralama ve kalıcı görsel silme
 - Kategori ekleme, düzenleme ve silme
@@ -55,7 +55,7 @@ npm run lint
 npm run build
 ```
 
-Testler ürün formu veri dönüşümlerini, piyasa ürünü günlük fiyat kuralını,
+Testler dört dilli arama ve payload bütünlüğünü, ürün formu veri dönüşümlerini, piyasa ürünü günlük fiyat kuralını,
 CSRF/Origin korumasını ve multipart görsellerin SSH tüneli arkasındaki API'ye
 bozulmadan aktarılmasını kapsar.
 

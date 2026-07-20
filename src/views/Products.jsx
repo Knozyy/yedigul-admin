@@ -8,6 +8,7 @@ import {
   listToText,
   truthy,
 } from '../lib/product-model.js';
+import { missingProductTranslationCodes, productMatchesQuery } from '../lib/i18n.js';
 
 const EMPTY_VARIANT = { name_tr: '', name_en: '', name_ar: '', name_ru: '', price: '' };
 const BLANK = {
@@ -56,20 +57,21 @@ function TranslationFields({ form, set }) {
     <>
       <div className="language-block">
         <h3>Ürün adları</h3>
+        <p className="form-hint">Arapça veya Rusça boşsa menü İngilizceyi, o da boşsa Türkçeyi gösterir.</p>
         <div className="form-grid two">
-          <label className="field"><span>Türkçe *</span><input value={form.name_tr} onChange={(event) => set('name_tr', event.target.value)} required /></label>
-          <label className="field"><span>İngilizce *</span><input value={form.name_en} onChange={(event) => set('name_en', event.target.value)} required /></label>
-          <label className="field"><span>Arapça</span><input dir="rtl" value={form.name_ar} onChange={(event) => set('name_ar', event.target.value)} /></label>
-          <label className="field"><span>Rusça</span><input value={form.name_ru} onChange={(event) => set('name_ru', event.target.value)} /></label>
+          <label className="field"><span>Türkçe *</span><input lang="tr" value={form.name_tr} onChange={(event) => set('name_tr', event.target.value)} required /></label>
+          <label className="field"><span>İngilizce *</span><input lang="en" value={form.name_en} onChange={(event) => set('name_en', event.target.value)} required /></label>
+          <label className="field"><span>Arapça</span><input lang="ar" dir="rtl" value={form.name_ar} onChange={(event) => set('name_ar', event.target.value)} /></label>
+          <label className="field"><span>Rusça</span><input lang="ru" value={form.name_ru} onChange={(event) => set('name_ru', event.target.value)} /></label>
         </div>
       </div>
       <div className="language-block">
         <h3>Açıklamalar</h3>
         <div className="form-grid two">
-          <label className="field"><span>Türkçe</span><textarea value={form.desc_tr} onChange={(event) => set('desc_tr', event.target.value)} /></label>
-          <label className="field"><span>İngilizce</span><textarea value={form.desc_en} onChange={(event) => set('desc_en', event.target.value)} /></label>
-          <label className="field"><span>Arapça</span><textarea dir="rtl" value={form.desc_ar} onChange={(event) => set('desc_ar', event.target.value)} /></label>
-          <label className="field"><span>Rusça</span><textarea value={form.desc_ru} onChange={(event) => set('desc_ru', event.target.value)} /></label>
+          <label className="field"><span>Türkçe</span><textarea lang="tr" value={form.desc_tr} onChange={(event) => set('desc_tr', event.target.value)} /></label>
+          <label className="field"><span>İngilizce</span><textarea lang="en" value={form.desc_en} onChange={(event) => set('desc_en', event.target.value)} /></label>
+          <label className="field"><span>Arapça</span><textarea lang="ar" dir="rtl" value={form.desc_ar} onChange={(event) => set('desc_ar', event.target.value)} /></label>
+          <label className="field"><span>Rusça</span><textarea lang="ru" value={form.desc_ru} onChange={(event) => set('desc_ru', event.target.value)} /></label>
         </div>
       </div>
     </>
@@ -82,14 +84,14 @@ function ContentFields({ form, set }) {
       <h3>İçindekiler ve alerjenler</h3>
       <p className="form-hint">Birden fazla değeri virgülle veya yeni satırla ayırın.</p>
       <div className="form-grid two">
-        <label className="field"><span>İçindekiler (TR)</span><textarea value={form.ing_tr} onChange={(event) => set('ing_tr', event.target.value)} /></label>
-        <label className="field"><span>Ingredients (EN)</span><textarea value={form.ing_en} onChange={(event) => set('ing_en', event.target.value)} /></label>
-        <label className="field"><span>İçindekiler (AR)</span><textarea dir="rtl" value={form.ing_ar} onChange={(event) => set('ing_ar', event.target.value)} /></label>
-        <label className="field"><span>İçindekiler (RU)</span><textarea value={form.ing_ru} onChange={(event) => set('ing_ru', event.target.value)} /></label>
-        <label className="field"><span>Alerjenler (TR)</span><textarea value={form.alg_tr} onChange={(event) => set('alg_tr', event.target.value)} /></label>
-        <label className="field"><span>Allergens (EN)</span><textarea value={form.alg_en} onChange={(event) => set('alg_en', event.target.value)} /></label>
-        <label className="field"><span>Alerjenler (AR)</span><textarea dir="rtl" value={form.alg_ar} onChange={(event) => set('alg_ar', event.target.value)} /></label>
-        <label className="field"><span>Alerjenler (RU)</span><textarea value={form.alg_ru} onChange={(event) => set('alg_ru', event.target.value)} /></label>
+        <label className="field"><span>İçindekiler (TR)</span><textarea lang="tr" value={form.ing_tr} onChange={(event) => set('ing_tr', event.target.value)} /></label>
+        <label className="field"><span>Ingredients (EN)</span><textarea lang="en" value={form.ing_en} onChange={(event) => set('ing_en', event.target.value)} /></label>
+        <label className="field"><span>İçindekiler (AR)</span><textarea lang="ar" dir="rtl" value={form.ing_ar} onChange={(event) => set('ing_ar', event.target.value)} /></label>
+        <label className="field"><span>İçindekiler (RU)</span><textarea lang="ru" value={form.ing_ru} onChange={(event) => set('ing_ru', event.target.value)} /></label>
+        <label className="field"><span>Alerjenler (TR)</span><textarea lang="tr" value={form.alg_tr} onChange={(event) => set('alg_tr', event.target.value)} /></label>
+        <label className="field"><span>Allergens (EN)</span><textarea lang="en" value={form.alg_en} onChange={(event) => set('alg_en', event.target.value)} /></label>
+        <label className="field"><span>Alerjenler (AR)</span><textarea lang="ar" dir="rtl" value={form.alg_ar} onChange={(event) => set('alg_ar', event.target.value)} /></label>
+        <label className="field"><span>Alerjenler (RU)</span><textarea lang="ru" value={form.alg_ru} onChange={(event) => set('alg_ru', event.target.value)} /></label>
       </div>
     </div>
   );
@@ -107,10 +109,10 @@ function VariantEditor({ variants, setVariants }) {
         {variants.map((variant, index) => (
           <div className="variant-row" key={index}>
             <div className="form-grid variant-grid">
-              <label className="field"><span>Ad (TR)</span><input value={variant.name_tr} onChange={(event) => update(index, 'name_tr', event.target.value)} /></label>
-              <label className="field"><span>Ad (EN)</span><input value={variant.name_en} onChange={(event) => update(index, 'name_en', event.target.value)} /></label>
-              <label className="field"><span>Ad (AR)</span><input dir="rtl" value={variant.name_ar} onChange={(event) => update(index, 'name_ar', event.target.value)} /></label>
-              <label className="field"><span>Ad (RU)</span><input value={variant.name_ru} onChange={(event) => update(index, 'name_ru', event.target.value)} /></label>
+              <label className="field"><span>Ad (TR)</span><input lang="tr" value={variant.name_tr} onChange={(event) => update(index, 'name_tr', event.target.value)} /></label>
+              <label className="field"><span>Ad (EN)</span><input lang="en" value={variant.name_en} onChange={(event) => update(index, 'name_en', event.target.value)} /></label>
+              <label className="field"><span>Ad (AR)</span><input lang="ar" dir="rtl" value={variant.name_ar} onChange={(event) => update(index, 'name_ar', event.target.value)} /></label>
+              <label className="field"><span>Ad (RU)</span><input lang="ru" value={variant.name_ru} onChange={(event) => update(index, 'name_ru', event.target.value)} /></label>
               <label className="field"><span>Fiyat (TL)</span><input type="number" min="0" step="0.01" value={variant.price} onChange={(event) => update(index, 'price', event.target.value)} /></label>
               <button type="button" className="danger-button compact" onClick={() => setVariants((rows) => rows.filter((_, rowIndex) => rowIndex !== index))}>Kaldır</button>
             </div>
@@ -211,13 +213,14 @@ function ProductForm({ product, categories, onClose, onSave, onDelete, request, 
 export default function Products({ menu, onReload, request, publicMenuUrl }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [missingOnly, setMissingOnly] = useState(false);
   const [editing, setEditing] = useState(undefined);
   const categoriesById = useMemo(() => Object.fromEntries(menu.categories.map((item) => [item.id, item])), [menu.categories]);
   const filtered = useMemo(() => menu.products.filter((product) => {
     if (category !== 'all' && product.category_id !== category) return false;
-    const haystack = `${product.name_tr} ${product.name_en} ${product.desc_tr}`.toLocaleLowerCase('tr');
-    return haystack.includes(query.trim().toLocaleLowerCase('tr'));
-  }), [menu.products, category, query]);
+    if (missingOnly && missingProductTranslationCodes(product).length === 0) return false;
+    return productMatchesQuery(product, query);
+  }), [menu.products, category, missingOnly, query]);
 
   async function save(payload, pendingImages) {
     let saved = editing
@@ -243,14 +246,15 @@ export default function Products({ menu, onReload, request, publicMenuUrl }) {
     <div className="view-stack">
       <header className="page-heading"><div><span className="eyebrow">MENÜ İÇERİĞİ</span><h1>Ürünler</h1></div><button className="primary-button" onClick={() => setEditing(null)}>+ Yeni ürün</button></header>
       <div className="toolbar"><label className="search-field"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ürün ara…" /></label><span className="result-count">{filtered.length} ürün</span></div>
-      <div className="chips"><button className={category === 'all' ? 'active' : ''} onClick={() => setCategory('all')}>Tümü</button>{menu.categories.map((item) => <button key={item.id} className={category === item.id ? 'active' : ''} onClick={() => setCategory(item.id)}>{item.name_tr}</button>)}</div>
+      <div className="chips"><button className={missingOnly ? 'active' : ''} onClick={() => setMissingOnly((value) => !value)}>Çeviri eksiği</button><button className={category === 'all' ? 'active' : ''} onClick={() => setCategory('all')}>Tümü</button>{menu.categories.map((item) => <button key={item.id} className={category === item.id ? 'active' : ''} onClick={() => setCategory(item.id)}>{item.name_tr}</button>)}</div>
       <section className="data-list">
         {filtered.map((product) => {
           const imageUrl = product.image_url ? new URL(product.image_url, publicMenuUrl).href : '';
+          const missingLanguages = missingProductTranslationCodes(product);
           return <button className="product-row" key={product.id} onClick={() => setEditing(product)}>
             {imageUrl ? <img src={imageUrl} alt="" /> : <span className="thumb-placeholder">Y</span>}
             <span className="product-main"><strong>{product.name_tr}</strong><small>{categoriesById[product.category_id]?.name_tr || product.category_id} · {priceLabel(product)}</small></span>
-            <span className="row-badges">{product.is_hidden ? <i>Gizli</i> : null}{product.is_available === 0 ? <i className="warn">Tükendi</i> : null}{product.popular ? <i className="gold">Popüler</i> : null}{product.variants?.length ? <i>{product.variants.length} seçenek</i> : null}</span>
+            <span className="row-badges">{missingLanguages.map((code) => <i className="warn" key={code}>{code.toUpperCase()} eksik</i>)}{product.is_hidden ? <i>Gizli</i> : null}{product.is_available === 0 ? <i className="warn">Tükendi</i> : null}{product.popular ? <i className="gold">Popüler</i> : null}{product.variants?.length ? <i>{product.variants.length} seçenek</i> : null}</span>
             <span className="edit-circle">›</span>
           </button>;
         })}

@@ -56,7 +56,7 @@ export default function App() {
     setActive('overview');
   }
 
-  async function request(method, path, body) {
+  const request = useCallback(async (method, path, body) => {
     try { return await api[method](path, body); }
     catch (e) {
       if (e.status === 401) {
@@ -65,7 +65,7 @@ export default function App() {
       }
       throw e;
     }
-  }
+  }, []);
 
   if (loading) return <div className="splash"><span className="brand-mark large">Y</span><p>Lokal yönetim hazırlanıyor…</p></div>;
   if (!boot) return <div className="splash error-splash"><h1>Uygulama başlatılamadı</h1><p>{error}</p><button className="primary-button" onClick={() => window.location.reload()}>Yeniden dene</button></div>;
@@ -78,9 +78,8 @@ export default function App() {
     overview: <Overview menu={menu} />,
     products: <Products menu={menu} onReload={reloadMenu} request={request} publicMenuUrl={boot.publicMenuUrl} />,
     categories: <Categories menu={menu} onReload={reloadMenu} request={request} />,
-    settings: <Settings />,
+    settings: <Settings request={request} />,
     connection: <Connection boot={boot} onDisconnect={disconnect} />,
   };
   return <Shell active={active} onSelect={setActive} onLogout={logout} publicMenuUrl={boot.publicMenuUrl}>{views[active]}</Shell>;
 }
-

@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react';
-import { api } from '../lib/api.js';
-
-export default function Settings() {
+export default function Settings({ request }) {
   const [form, setForm] = useState(null);
   const [state, setState] = useState({ busy: false, error: '', success: '' });
-  useEffect(() => { api.get('/admin/settings').then(setForm).catch((e) => setState((s) => ({ ...s, error: e.message }))); }, []);
+  useEffect(() => { request('get', '/admin/settings').then(setForm).catch((e) => setState((s) => ({ ...s, error: e.message }))); }, [request]);
   const set = (key, value) => setForm((old) => ({ ...old, [key]: value }));
   async function submit(event) {
     event.preventDefault(); setState({ busy: true, error: '', success: '' });
-    try { setForm(await api.put('/admin/settings', form)); setState({ busy: false, error: '', success: 'Ayarlar canlı veritabanına kaydedildi.' }); }
+    try { setForm(await request('put', '/admin/settings', form)); setState({ busy: false, error: '', success: 'Ayarlar canlı veritabanına kaydedildi.' }); }
     catch (e) { setState({ busy: false, error: e.message, success: '' }); }
   }
   return <div className="view-stack">
@@ -17,10 +15,10 @@ export default function Settings() {
       {state.error && <div className="alert error">{state.error}</div>}{state.success && <div className="alert success">{state.success}</div>}
       <div className="section-title"><div><span className="eyebrow">DUYURU BANDI</span><h2>Çok dilli duyuru</h2></div></div>
       <div className="form-grid two">
-        <label className="field"><span>Türkçe</span><textarea value={form.announcement_tr || ''} onChange={(e) => set('announcement_tr', e.target.value)} /></label>
-        <label className="field"><span>İngilizce</span><textarea value={form.announcement_en || ''} onChange={(e) => set('announcement_en', e.target.value)} /></label>
-        <label className="field"><span>Arapça</span><textarea dir="rtl" value={form.announcement_ar || ''} onChange={(e) => set('announcement_ar', e.target.value)} /></label>
-        <label className="field"><span>Rusça</span><textarea value={form.announcement_ru || ''} onChange={(e) => set('announcement_ru', e.target.value)} /></label>
+        <label className="field"><span>Türkçe</span><textarea lang="tr" value={form.announcement_tr || ''} onChange={(e) => set('announcement_tr', e.target.value)} /></label>
+        <label className="field"><span>İngilizce</span><textarea lang="en" value={form.announcement_en || ''} onChange={(e) => set('announcement_en', e.target.value)} /></label>
+        <label className="field"><span>Arapça</span><textarea lang="ar" dir="rtl" value={form.announcement_ar || ''} onChange={(e) => set('announcement_ar', e.target.value)} /></label>
+        <label className="field"><span>Rusça</span><textarea lang="ru" value={form.announcement_ru || ''} onChange={(e) => set('announcement_ru', e.target.value)} /></label>
       </div>
       <div className="section-title top-gap"><div><span className="eyebrow">İLETİŞİM</span><h2>Menü bilgi alanları</h2></div></div>
       <div className="form-grid two">
@@ -35,4 +33,3 @@ export default function Settings() {
     </form>}
   </div>;
 }
-
