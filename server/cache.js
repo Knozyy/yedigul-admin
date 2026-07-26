@@ -28,8 +28,9 @@ export class PanoCache {
       CREATE TABLE IF NOT EXISTS snapshots (
         day    TEXT NOT NULL,
         metric TEXT NOT NULL,
+        entity TEXT NOT NULL DEFAULT '',
         value  REAL NOT NULL,
-        PRIMARY KEY (day, metric)
+        PRIMARY KEY (day, metric, entity)
       );
       -- Yenilenen erişim anahtarları. .env'deki değer YALNIZCA tohumdur;
       -- Instagram uzun ömürlü token'ı 60 günde bir yenilenip yerine yenisi
@@ -47,6 +48,30 @@ export class PanoCache {
     if (!columns.includes('version')) {
       this.db.exec('ALTER TABLE connector_cache ADD COLUMN version INTEGER NOT NULL DEFAULT 1');
     }
+    this.migrateSnapshots();
+  }
+
+  /**
+   * snapshots'a entity sütununu ekler. ALTER TABLE birincil anahtarı
+   * genişletemediği için tablo kopyalanarak yeniden kurulur — bu verinin
+   * geri getirilme yolu yok, DROP ile atılamaz.
+   */
+  migrateSnapshots() {
+    const cols = this.db.prepare('PRAGMA table_info(snapshots)').all().map((c) => c.name);
+    if (cols.includes('entity')) return;
+    this.db.exec(`
+      CREATE TABLE snapshots_yeni (
+        day    TEXT NOT NULL,
+        metric TEXT NOT NULL,
+        entity TEXT NOT NULL DEFAULT '',
+        value  REAL NOT NULL,
+        PRIMARY KEY (day, metric, entity)
+      );
+      INSERT INTO snapshots_yeni (day, metric, entity, value)
+        SELECT day, metric, '', value FROM snapshots;
+      DROP TABLE snapshots;
+      ALTER TABLE snapshots_yeni RENAME TO snapshots;
+    `);
   }
 
   /**
@@ -76,15 +101,15 @@ export class PanoCache {
       .run(id, JSON.stringify(data), fetchedAt, version);
   }
 
-  /** Gün başına tek kayıt; aynı gün tekrar yazılırsa son değer kalır. */
-  snapshot(metric, value, day = localDay()) {
+  /** Gün + ölçüt + varlık başına tek kayıt; tekrar yazılırsa son değer kalır. */
+  snapshot(metric, value, day = localDay(), entity = '') {
     if (!Number.isFinite(value)) return;
     this.db
       .prepare(
-        `INSERT INTO snapshots (day, metric, value) VALUES (?, ?, ?)
-         ON CONFLICT(day, metric) DO UPDATE SET value = excluded.value`,
+        `INSERT INTO snapshots (day, metric, entity, value) VALUES (?, ?, ?, ?)
+         ON CONFLICT(day, metric, entity) DO UPDATE SET value = excluded.value`,
       )
-      .run(day, metric, value);
+      .run(day, metric, entity, value);
   }
 
   getToken(name) {
@@ -101,11 +126,33 @@ export class PanoCache {
       .run(name, value, expiresAt, refreshedAt);
   }
 
-  history(metric, limit = 30) {
+  history(metric, limit = 30, entity = '') {
     return this.db
-      .prepare('SELECT day, value FROM snapshots WHERE metric = ? ORDER BY day DESC LIMIT ?')
-      .all(metric, limit)
-      .reverse();
+      .prepare(
+        `SELECT day, value FROM snapshots
+         WHERE metric = ? AND entity = ? ORDER BY day DESC LIMIT ?`,
+      )
+      .all(metric, entity, limit)
+      .reverse()
+      // node:sqlite null-prototype nesne döner; tüketiciler düz nesne bekler.
+      .map((row) => ({ ...row }));
+  }
+
+  /** Sunucuya gönderilecek düz liste. Budama yok; pencere yalnız gönderim içindir. */
+  allSnapshots(sinceDays = 90) {
+    const esik = localDay(new Date(Date.now() - (sinceDays - 1) * 86400000));
+    return this.db
+      .prepare('SELECT day, metric, entity, value FROM snapshots WHERE day >= ? ORDER BY day ASC')
+      .all(esik)
+      .map((row) => ({ ...row }));
+  }
+
+  /** O güne ait kayıt var mı — günlük fiyat toplamasını bir kereye indirir. */
+  hasMetricOnDay(metric, day) {
+    const row = this.db
+      .prepare('SELECT 1 AS v FROM snapshots WHERE metric = ? AND day = ? LIMIT 1')
+      .get(metric, day);
+    return Boolean(row);
   }
 
   close() {
