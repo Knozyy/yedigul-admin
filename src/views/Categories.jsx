@@ -30,7 +30,7 @@ function CategoryForm({ category, onClose, onSave, onDelete }) {
       <label className="field"><span>Rusça</span><input lang="ru" value={form.name_ru || ''} onChange={(e) => set('name_ru', e.target.value)} /></label>
     </div>
     <label className="check-card"><input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} /><span>Menüde aktif</span></label>
-    <div className="form-actions">{category && <button type="button" className="danger-button" disabled={busy} onClick={remove}>Kategoriyi sil</button>}<span className="spacer" /><button type="button" className="secondary-button" onClick={onClose}>Vazgeç</button><button className="primary-button" disabled={busy}>{busy ? 'Kaydediliyor…' : 'Kaydet'}</button></div>
+    <div className="form-actions">{category && category.kind !== 'sets' && <button type="button" className="danger-button" disabled={busy} onClick={remove}>Kategoriyi sil</button>}<span className="spacer" /><button type="button" className="secondary-button" onClick={onClose}>Vazgeç</button><button className="primary-button" disabled={busy}>{busy ? 'Kaydediliyor…' : 'Kaydet'}</button></div>
   </form>;
 }
 
@@ -90,7 +90,7 @@ export default function Categories({ menu, onReload, request }) {
         <span className="drag-mark" title="Sıralamak için sürükleyin" onPointerDown={() => setSurukleAktif(true)}>≡</span>
         <button className="category-row" onClick={() => setEditing(category)}>
           <span className="category-index">{String(index).padStart(2, '0')}</span>
-          <span className="product-main"><strong>{category.name_tr}</strong><small>{category.name_en} · {count} ürün{missingLanguages.length ? ` · ${missingLanguages.map((code) => `${code.toUpperCase()} eksik`).join(', ')}` : ''}</small></span>
+          <span className="product-main"><strong>{category.name_tr}</strong><small>{category.name_en} · {category.kind === 'sets' ? 'fix menüler burada görünür' : `${count} ürün`}{missingLanguages.length ? ` · ${missingLanguages.map((code) => `${code.toUpperCase()} eksik`).join(', ')}` : ''}</small></span>
           {category.is_active === 0 && <i className="inactive-badge">Pasif</i>}
           <span className="edit-circle">›</span>
         </button>
