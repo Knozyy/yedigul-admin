@@ -15,8 +15,29 @@ app.use('/api/admin', (req, res, next) => {
   next();
 });
 
+// Kategoriler değişebilsin diye modül düzeyinde tutulur: sıralama ucu bunu
+// yeniden dizer, böylece tarayıcıda sürükle-bırak gerçekten denenebilir.
+const CATEGORIES = [
+  { id: 'fish', name_tr: 'Balıklar', name_en: 'Fish', name_ar: 'سمك', name_ru: 'Рыба', sort: 0, is_active: 1 },
+  { id: 'meze', name_tr: 'Mezeler', name_en: 'Starters', name_ar: 'مقبلات', name_ru: 'Закуски', sort: 1, is_active: 1 },
+  { id: 'icecek', name_tr: 'İçecekler', name_en: 'Drinks', name_ar: 'مشروبات', name_ru: 'Напитки', sort: 2, is_active: 1 },
+];
+
+app.put('/api/admin/categories/order', (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String) : [];
+  const mevcut = CATEGORIES.map((c) => c.id);
+  const benzersiz = new Set(ids);
+  if (!ids.length || benzersiz.size !== ids.length
+      || ids.length !== mevcut.length || mevcut.some((id) => !benzersiz.has(id))) {
+    return res.status(400).json({ error: 'Liste tüm kategorileri tam olarak içermeli.' });
+  }
+  CATEGORIES.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  CATEGORIES.forEach((c, i) => { c.sort = i; });
+  res.json({ ok: true, count: ids.length });
+});
+
 app.get('/api/admin/menu', (_req, res) => res.json({
-  categories: [{ id: 'fish', name_tr: 'Balıklar', name_en: 'Fish', name_ar: 'سمك', name_ru: 'Рыба', sort: 1, is_active: 1 }],
+  categories: CATEGORIES,
   products: [{
     id: 'levrek', category_id: 'fish', name_tr: 'Levrek', name_en: 'Sea Bass', name_ar: 'قاروص', name_ru: 'Сибас',
     desc_tr: 'Günlük taze levrek.', desc_en: 'Daily fresh sea bass.', desc_ar: '', desc_ru: '',
