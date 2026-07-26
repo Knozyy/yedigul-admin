@@ -3,6 +3,7 @@ import { api } from './lib/api.js';
 import Shell from './components/Shell.jsx';
 import { ConnectionGate, LoginGate } from './components/ConnectionGate.jsx';
 import Pano from './views/Pano.jsx';
+import DailyPrices from './views/DailyPrices.jsx';
 import Products from './views/Products.jsx';
 import Categories from './views/Categories.jsx';
 import FixMenus from './views/FixMenus.jsx';
@@ -100,6 +101,7 @@ export default function App() {
 
   const views = {
     pano: <Pano menu={menu} panel={panel} onSynced={reloadPanel} />,
+    prices: <DailyPrices menu={menu} onReload={reloadMenu} request={request} />,
     products: <Products menu={menu} onReload={reloadMenu} request={request} publicMenuUrl={boot.publicMenuUrl} />,
     categories: <Categories menu={menu} onReload={reloadMenu} request={request} />,
     sets: <FixMenus menu={menu} onReload={reloadMenu} request={request} />,

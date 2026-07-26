@@ -1,5 +1,6 @@
 const NAV = [
   ['pano', 'Pano', '◫'],
+  ['prices', 'Günlük Fiyat', '₺'],
   ['products', 'Ürünler', '◇'],
   ['categories', 'Kategoriler', '≡'],
   ['sets', 'Fix Menü', '❖'],
@@ -28,8 +29,11 @@ export default function Shell({ active, onSelect, onLogout, publicMenuUrl, child
         </div>
       </aside>
       <main className="main-content">{children}</main>
+      {/* Sekme sayısı YALNIZCA NAV'da yazar. Burada slice, CSS'te sabit sütun
+          sayısı olduğunda ikisi ayrı ayrı güncellenmesi gereken iki sayı olur —
+          nitekim 5 düğme 4 sütuna basılıyordu ve beşincisi kırpılıyordu. */}
       <nav className="mobile-nav" aria-label="Yönetim bölümleri">
-        {NAV.slice(0, 5).map(([id, label, icon]) => (
+        {NAV.map(([id, label, icon]) => (
           <button key={id} className={active === id ? 'active' : ''} onClick={() => onSelect(id)}>
             <span aria-hidden="true">{icon}</span><small>{label}</small>
           </button>
