@@ -62,6 +62,37 @@ export class RemoteClient {
     return response.json();
   }
 
+  /**
+   * Yönetim API'sine JSON yazar. read()'in POST kardeşi — konektörlerin ve
+   * senkronun elinde bir Express isteği yok, o yüzden proxy() kullanılamaz.
+   */
+  async write(path, body, token) {
+    const url = joinUrl(this.config.remoteAdminBaseUrl, `${this.config.remoteAdminPath}${path}`);
+    let response;
+    try {
+      response = await this.fetch(url, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+        redirect: 'manual',
+        signal: AbortSignal.timeout(20000),
+      });
+    } catch (error) {
+      throw Object.assign(
+        new Error('Sunucudaki özel admin servisi yanıt vermiyor.'),
+        { status: 503, cause: error },
+      );
+    }
+    if (!response.ok) {
+      throw Object.assign(new Error(await parseError(response)), { status: response.status });
+    }
+    return response.json();
+  }
+
   async proxy(req, token) {
     const suffix = req.originalUrl.slice('/local-api/admin'.length) || '/';
     const url = joinUrl(this.config.remoteAdminBaseUrl, `${this.config.remoteAdminPath}${suffix}`);

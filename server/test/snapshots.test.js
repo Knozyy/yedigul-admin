@@ -2,6 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PanoCache, localDay } from '../cache.js';
 import { priceSnapshots } from '../snapshots/prices.js';
+import { RemoteClient } from '../remote-client.js';
+import { loadConfig } from '../config.js';
+
+const cfg = loadConfig({ SSH_ENABLED: '0' });
 
 test('entity ile yazılan kayıtlar birbirini ezmez', () => {
   const cache = new PanoCache('');
@@ -113,4 +117,43 @@ test('eski entity siz şema migration ile korunur', () => {
   cache.migrateSnapshots();
 
   assert.deepEqual(cache.history('ig.followers', 30), [{ day: '2026-07-01', value: 4000 }]);
+});
+
+test('write gövdeyi JSON olarak POST eder ve token taşır', async () => {
+  let gorulen = null;
+  const client = new RemoteClient(cfg, async (url, options) => {
+    gorulen = { url, options };
+    return new Response(JSON.stringify({ written: 2, skipped: 0, unknown: [] }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    });
+  });
+
+  const sonuc = await client.write('/snapshots', { items: [{ day: '2026-07-25' }] }, 'tok');
+  assert.deepEqual(sonuc, { written: 2, skipped: 0, unknown: [] });
+  assert.equal(gorulen.options.method, 'POST');
+  assert.equal(gorulen.options.headers.authorization, 'Bearer tok');
+  assert.equal(gorulen.options.headers['content-type'], 'application/json');
+  assert.ok(gorulen.url.endsWith('/snapshots'));
+  assert.deepEqual(JSON.parse(gorulen.options.body), { items: [{ day: '2026-07-25' }] });
+});
+
+test('write hata durumunda sunucunun mesajını taşıyan hata fırlatır', async () => {
+  const client = new RemoteClient(cfg, async () =>
+    new Response(JSON.stringify({ error: 'Tek seferde en çok 2000 kayıt.' }), {
+      status: 413, headers: { 'content-type': 'application/json' },
+    }));
+
+  await assert.rejects(() => client.write('/snapshots', { items: [] }, 'tok'), (error) => {
+    assert.equal(error.status, 413);
+    assert.match(error.message, /2000/);
+    return true;
+  });
+});
+
+test('write ağ hatasında 503 ile anlaşılır mesaj verir', async () => {
+  const client = new RemoteClient(cfg, async () => { throw new Error('ECONNREFUSED'); });
+  await assert.rejects(() => client.write('/snapshots', {}, 'tok'), (error) => {
+    assert.equal(error.status, 503);
+    return true;
+  });
 });
