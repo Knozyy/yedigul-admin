@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '../components/Modal.jsx';
 import { missingCategoryTranslationCodes } from '../lib/i18n.js';
+import { tasi } from '../lib/reorder.js';
 
 const BLANK = { id: '', name_tr: '', name_en: '', name_ar: '', name_ru: '', sort: 0, is_active: true };
 
@@ -35,6 +36,36 @@ function CategoryForm({ category, onClose, onSave, onDelete }) {
 
 export default function Categories({ menu, onReload, request }) {
   const [editing, setEditing] = useState(undefined);
+
+  // Sürükleme yalnız ≡ tutamacından başlar: tarayıcı sürüklemeyi tıklamadan
+  // ayırt etmez, satırın tamamı draggable olsaydı düzenleme kutusu açılmazdı.
+  const [surukleAktif, setSurukleAktif] = useState(false);
+  const [kaynak, setKaynak] = useState(null);
+  const [siralama, setSiralama] = useState(null); // iyimser sıra; null = sunucudaki
+  const [hata, setHata] = useState('');
+
+  const kategoriler = siralama || menu.categories;
+
+  async function birak(hedefIndeks) {
+    setSurukleAktif(false);
+    if (kaynak === null || kaynak === hedefIndeks) { setKaynak(null); return; }
+
+    const oncekiSira = kategoriler;
+    const yeni = tasi(kategoriler, kaynak, hedefIndeks);
+    setKaynak(null);
+    setSiralama(yeni); // iyimser: arayüz hemen yeni sırayı gösterir
+    setHata('');
+
+    try {
+      await request('put', '/admin/categories/order', { ids: yeni.map((c) => c.id) });
+      await onReload();
+      setSiralama(null); // sunucudaki sıra artık doğru; ona geri dön
+    } catch (error) {
+      setSiralama(oncekiSira);
+      setHata(error.message);
+    }
+  }
+
   async function save(form) {
     if (editing) await request('patch', `/admin/categories/${editing.id}`, form);
     else await request('post', '/admin/categories', form);
@@ -43,10 +74,27 @@ export default function Categories({ menu, onReload, request }) {
   async function remove(id) { await request('del', `/admin/categories/${id}`); await onReload(); }
   return <div className="view-stack">
     <header className="page-heading"><div><span className="eyebrow">MENÜ DÜZENİ</span><h1>Kategoriler</h1></div><button className="primary-button" onClick={() => setEditing(null)}>+ Yeni kategori</button></header>
-    <section className="data-list category-list">{menu.categories.map((category) => {
+    {hata && <div className="alert error">{hata}</div>}
+    <section className="data-list category-list">{kategoriler.map((category, index) => {
       const count = menu.products.filter((p) => p.category_id === category.id).length;
       const missingLanguages = missingCategoryTranslationCodes(category);
-      return <button className="category-row" key={category.id} onClick={() => setEditing(category)}><span className="drag-mark">≡</span><span className="category-index">{String(category.sort).padStart(2, '0')}</span><span className="product-main"><strong>{category.name_tr}</strong><small>{category.name_en} · {count} ürün{missingLanguages.length ? ` · ${missingLanguages.map((code) => `${code.toUpperCase()} eksik`).join(', ')}` : ''}</small></span>{category.is_active === 0 && <i className="inactive-badge">Pasif</i>}<span className="edit-circle">›</span></button>;
+      return <div
+        className={`category-drag${kaynak === index ? ' dragging' : ''}`}
+        key={category.id}
+        draggable={surukleAktif}
+        onDragStart={() => setKaynak(index)}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={() => birak(index)}
+        onDragEnd={() => { setSurukleAktif(false); setKaynak(null); }}
+      >
+        <span className="drag-mark" title="Sıralamak için sürükleyin" onPointerDown={() => setSurukleAktif(true)}>≡</span>
+        <button className="category-row" onClick={() => setEditing(category)}>
+          <span className="category-index">{String(index).padStart(2, '0')}</span>
+          <span className="product-main"><strong>{category.name_tr}</strong><small>{category.name_en} · {count} ürün{missingLanguages.length ? ` · ${missingLanguages.map((code) => `${code.toUpperCase()} eksik`).join(', ')}` : ''}</small></span>
+          {category.is_active === 0 && <i className="inactive-badge">Pasif</i>}
+          <span className="edit-circle">›</span>
+        </button>
+      </div>;
     })}</section>
     {editing !== undefined && <Modal title={editing ? 'Kategoriyi düzenle' : 'Yeni kategori'} onClose={() => setEditing(undefined)}><CategoryForm category={editing} onClose={() => setEditing(undefined)} onSave={save} onDelete={remove} /></Modal>}
   </div>;
