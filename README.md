@@ -45,7 +45,66 @@ Doğrudan lokal backend ile geliştirmek için `.env` içinde `SSH_ENABLED=0` ve
 npm run panel
 ```
 
-Bu komut arayüzü derler ve paneli `http://127.0.0.1:4310/` adresinde açılmaya hazır hale getirir. Windows'ta `run.bat` da aynı akışı başlatır.
+Bu komut arayüzü derler ve paneli `http://127.0.0.1:4310/` adresinde açılmaya hazır hale getirir. Windows'ta `run.bat` da aynı akışı başlatır; ek olarak `OPEN_BROWSER=1` ayarladığı için sunucu dinlemeye başladığı anda panel varsayılan tarayıcıda otomatik açılır. Tarayıcının açılmasını istemezseniz paneli `npm run panel` ile başlatın.
+
+## Yeni bir bilgisayara kurulum
+
+Panel loopback'e bağlı olduğu için ağ üzerinden paylaşılmaz; kullanılacak her
+bilgisayara ayrı kurulur. Canlı veri tek yerde kaldığı için kurulumlar birbirinden
+bağımsızdır.
+
+Klasörü zip'leyip taşırken `node_modules`, `dist` ve `.env` dışarıda bırakılır;
+üçünü de kurulum üretir. `.env` yanlışlıkla zip'e girerse script bunu fark edip
+uyarır, çünkü içindeki anahtar yolu diğer bilgisayarı gösterir.
+
+```powershell
+.\kurulum.bat
+```
+
+Script Node.js ve OpenSSH varlığını doğrular, sunucu adresini sorar, o bilgisayara
+**ayrı** bir SSH anahtarı üretir, sunucunun host anahtarını `known_hosts` dosyasına
+yazar, `.env` dosyasını doğru yollarla yazar ve paketleri kurar. Mevcut `.env`,
+anahtar veya kayıt varsa dokunmaz; tekrar çalıştırmak güvenlidir.
+
+Host anahtarı **ağdan sorulmaz**: paketle gelen `sunucu-hostkey.txt` dosyasından
+yazılır ve o dosya güvenilen bir makinenin `known_hosts` dosyasından üretilir.
+`ssh-keyscan` ile otomatik çekmek, ilk bağlantıda araya giren birinin anahtarını
+"güvenilir" diye kaydetme riskini taşıdığı için tercih edilmemiştir. Dosya pakette
+yoksa script bunu söyler ve adım elle yapılır.
+
+Bitince tek adım elle yapılır:
+
+1. Script sonunda hazır bir komut basar; sunucuya root olarak bağlanıp o komutu
+   çalıştırmak yeterlidir. Biçimi şudur (`AAAA...` yerine script'in bastığı
+   gerçek anahtar gelir):
+
+   ```bash
+   printf '\n%s\n' 'restrict,port-forwarding,permitopen="127.0.0.1:3002" ssh-ed25519 AAAA... yedigul-DUKKAN-PC' >> /home/yedigul-admin/.ssh/authorized_keys
+   ```
+
+   Baştaki `printf '\n'` mevcut son satırın sonunda yeni satır karakteri
+   olmama ihtimaline karşıdır; olmazsa iki anahtar birbirine yapışır ve ikisi de
+   çalışmaz. Tek tırnaklar `permitopen="..."` içindeki çift tırnakları korur.
+
+   Doğrulama — anahtar sayısını verir:
+
+   ```bash
+   grep -c ssh-ed25519 /home/yedigul-admin/.ssh/authorized_keys
+   ```
+
+   Her bilgisayarın kendi satırı olması, bir cihaz elden çıktığında yalnızca o
+   satırı silerek erişimi kesmeyi sağlar.
+
+Sonrasında günlük kullanım `run.bat` ile devam eder.
+
+`sunucu-hostkey.txt` yeni bir kurulum paketi hazırlarken şöyle üretilir:
+
+```powershell
+Select-String -Path "$env:USERPROFILE\.ssh\known_hosts" -Pattern 'SUNUCU_ADRESI' -SimpleMatch
+```
+
+Çıkan satır dosyaya yazılır. Sunucu adresi veya host anahtarı değişirse dosya
+yeniden üretilmelidir; `.env` gibi Git'e dahil edilmez.
 
 ## Test ve kalite
 

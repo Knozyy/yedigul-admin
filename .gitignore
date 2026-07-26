@@ -1,6 +1,8 @@
 node_modules/
 dist/
+kurulum/
 .env
+sunucu-hostkey.txt
 *.log
 .DS_Store
 Thumbs.db
