@@ -5,6 +5,7 @@ import { priceSnapshots } from '../snapshots/prices.js';
 import { RemoteClient } from '../remote-client.js';
 import { loadConfig } from '../config.js';
 import { collectPrices, pullSnapshots, pushSnapshots, PULL_METRICS } from '../snapshots/sync.js';
+import { createApp } from '../app.js';
 
 const cfg = loadConfig({ SSH_ENABLED: '0' });
 
@@ -236,4 +237,80 @@ test('pullSnapshots sunucudaki günleri yerele yazar', async () => {
   assert.equal(cekilen, PULL_METRICS.length, 'her ölçüt için bir satır çekildi');
   assert.deepEqual(cache.history('ig.followers', 30), [{ day: '2026-07-20', value: 4000 }]);
   assert.equal(client.cagrilar.read.length, PULL_METRICS.length);
+});
+
+/** Oturum açmış bir panel uygulaması kurar; çerez ve CSRF anahtarını döndürür. */
+async function panelKur({ remoteClient, cache }) {
+  const tunnel = { status: () => ({ state: 'off' }), start: async () => {}, stop: async () => {} };
+  const app = createApp({ config: cfg, tunnel, cache, remoteClient, connectors: [] });
+  const server = app.listen(0);
+  await new Promise((r) => server.once('listening', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+
+  const boot = await fetch(`${base}/local-api/bootstrap`);
+  const cookie = boot.headers.get('set-cookie').split(';')[0];
+  const { csrf } = await boot.json();
+  await fetch(`${base}/local-api/session/login`, {
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json', 'x-csrf-token': csrf, origin: base },
+    body: JSON.stringify({ password: 'test-panel' }),
+  });
+  return { base, cookie, csrf, close: () => server.close() };
+}
+
+test('panel/sync toplar, iter ve çeker', async () => {
+  const cache = new PanoCache('');
+  const client = sahteIstemci({
+    menu: { products: [{ id: 'levrek', price: 850, variants: [] }] },
+    rows: [{ day: '2026-07-20', entity: '', value: 4000 }],
+    writeSonuc: { written: 1, skipped: 0, unknown: [] },
+  });
+  client.login = async () => 'uzak-token';
+
+  const panel = await panelKur({ remoteClient: client, cache });
+  const res = await fetch(`${panel.base}/local-api/panel/sync`, {
+    method: 'POST',
+    headers: { cookie: panel.cookie, 'x-csrf-token': panel.csrf, origin: panel.base },
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.collected, 1);
+  assert.equal(body.pulled, PULL_METRICS.length);
+  assert.ok(client.cagrilar.write.length >= 1);
+  panel.close();
+});
+
+test('panel/sync oturumsuz 401 döner', async () => {
+  const client = sahteIstemci();
+  const tunnel = { status: () => ({ state: 'off' }), start: async () => {}, stop: async () => {} };
+  const app = createApp({ config: cfg, tunnel, cache: new PanoCache(''), remoteClient: client, connectors: [] });
+  const server = app.listen(0);
+  await new Promise((r) => server.once('listening', r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+
+  const boot = await fetch(`${base}/local-api/bootstrap`);
+  const cookie = boot.headers.get('set-cookie').split(';')[0];
+  const { csrf } = await boot.json();
+
+  const res = await fetch(`${base}/local-api/panel/sync`, {
+    method: 'POST',
+    headers: { cookie, 'x-csrf-token': csrf, origin: base },
+  });
+  assert.equal(res.status, 401);
+  server.close();
+});
+
+test('arka plan senkronu düşse bile pano yanıtı 200 kalır', async () => {
+  const client = sahteIstemci();
+  client.login = async () => 'uzak-token';
+  client.read = async () => { throw new Error('tünel düştü'); };
+  client.write = async () => { throw new Error('tünel düştü'); };
+
+  const panel = await panelKur({ remoteClient: client, cache: new PanoCache('') });
+  const res = await fetch(`${panel.base}/local-api/panel`, { headers: { cookie: panel.cookie } });
+
+  assert.equal(res.status, 200, 'senkron hatası panoyu karartmamalı');
+  assert.ok(Array.isArray((await res.json()).panels));
+  panel.close();
 });

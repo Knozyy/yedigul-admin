@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import { CONNECTORS, runAll } from './connectors/index.js';
 import { RemoteClient } from './remote-client.js';
+import { collectPrices, pullSnapshots, pushSnapshots, syncInBackground } from './snapshots/sync.js';
 import { SessionStore, SESSION_COOKIE } from './session-store.js';
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]', '::1']);
@@ -123,12 +124,37 @@ export function createApp({
       remoteClient,
       remoteToken: session.remoteToken,
     });
+    // Anlık görüntüleri arka planda sunucuya it. Yanıt beklenmez: senkron
+    // panoyu geciktirmemeli, hatası da panoyu karartmamalı.
+    if (session.remoteToken && cache) {
+      syncInBackground({ remoteClient, remoteToken: session.remoteToken, cache });
+    }
+
     res.json({
       authenticated: Boolean(session.remoteToken),
       tunnel: tunnel.status(),
       generatedAt: new Date().toISOString(),
       panels,
     });
+  });
+
+  // Elle senkron: kullanıcı bastığında hem taze fiyat toplanır hem sunucuyla
+  // iki yönlü eşitlenir. Arka plan senkronunun aksine hata GİZLENMEZ —
+  // kullanıcı bir düğmeye bastıysa sonucunu görmeli.
+  app.post('/local-api/panel/sync', csrf, async (req, res) => {
+    const session = req.localSession;
+    if (!session.remoteToken) return res.status(401).json({ error: 'Yönetim oturumu gerekli.' });
+    if (!cache) return res.status(503).json({ error: 'Pano önbelleği kapalı.' });
+
+    const ctx = { remoteClient, remoteToken: session.remoteToken, cache };
+    try {
+      const collected = await collectPrices({ ...ctx, force: true });
+      const pushed = await pushSnapshots(ctx);
+      const pulled = await pullSnapshots(ctx);
+      res.json({ collected, pushed: pushed.written ?? 0, pulled });
+    } catch (error) {
+      res.status(errorStatus(error, 502)).json({ error: error.message });
+    }
   });
 
   app.post('/local-api/tunnel/connect', csrf, async (req, res) => {
