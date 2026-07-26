@@ -97,6 +97,18 @@ Bitince tek adım elle yapılır:
 
 Sonrasında günlük kullanım `run.bat` ile devam eder.
 
+Script `.env` içine pano ayarlarını da yazar. `PANO_DB_PATH` bilerek
+`%LOCALAPPDATA%\YedigulPano\pano.db` seçilmiştir: depo dışındadır ve Masaüstü
+veya Belgeler gibi OneDrive'a yönlendirilmiş olabilecek bir klasörde değildir —
+eşlenen klasördeki SQLite dosyası kilitlenme ve bozulma riski taşır. Bu anahtar
+eksik kalırsa önbellek bellek içinde çalışır ve günlük anlık görüntüler her
+kapanışta silinir; takipçi ve puan trendleri hiçbir zaman dolmaz. Pano
+eklenmeden önce kurulmuş bir `.env` varsa script eksik satırları sonuna ekler,
+tekrar çalıştırıldığında ikinci kez eklemez.
+
+`IG_*`, `GA4_*` ve `PLACES_*` anahtarları boş bırakılır; ilgili kart "bağlı
+değil" görünür ve panonun geri kalanı çalışır.
+
 `sunucu-hostkey.txt` yeni bir kurulum paketi hazırlarken şöyle üretilir:
 
 ```powershell

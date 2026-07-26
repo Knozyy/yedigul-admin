@@ -48,6 +48,11 @@ set "SSH_DIR=%USERPROFILE%\.ssh"
 set "KEY_PATH=%SSH_DIR%\yedigul_admin"
 set "KNOWN_HOSTS=%SSH_DIR%\known_hosts"
 
+rem Pano veritabani. LOCALAPPDATA secildi: depo disinda kalir ve Masaustu /
+rem Belgeler gibi OneDrive ile eslenen bir klasorde DEGILDIR. SQLite dosyasi
+rem eslenen klasorde tutulursa kilitlenme ve bozulma riski tasir.
+set "PANO_DB=%LOCALAPPDATA%\YedigulPano\pano.db"
+
 if not exist "%SSH_DIR%" mkdir "%SSH_DIR%"
 
 if exist "%KEY_PATH%" (
@@ -93,6 +98,31 @@ if exist ".env" (
     echo               .env dosyasini silip bu scripti tekrar calistirin.
     echo.
   )
+
+  rem Pano eklenmeden once kurulmus .env'lerde bu anahtar yoktur. Eksik
+  rem birakilirsa onbellek bellek icinde calisir ve gunluk anlik goruntuler
+  rem her kapanista silinir; takipci/puan trendleri hicbir zaman dolmaz.
+  set "HAS_PANO_DB="
+  for /f "usebackq eol=# tokens=1,* delims==" %%a in (".env") do (
+    if /i "%%a"=="PANO_DB_PATH" set "HAS_PANO_DB=1"
+  )
+  if not defined HAS_PANO_DB (
+    echo       Pano ayarlari eksik, .env sonuna ekleniyor...
+    >> .env (
+      echo.
+      echo # ---- Pano ----
+      echo PUBLIC_SITE_URL=https://www.yedigulrestorant.com/
+      echo PANO_DB_PATH=!PANO_DB!
+      echo.
+      echo IG_USER_ID=
+      echo IG_ACCESS_TOKEN=
+      echo GA4_PROPERTY_ID=
+      echo GA4_CREDENTIALS_PATH=
+      echo PLACES_API_KEY=
+      echo PLACES_PLACE_ID=
+    )
+    echo       eklendi: !PANO_DB!
+  )
 ) else (
   echo [5/6] .env olusturuluyor. Iki bilgi gerekiyor:
   echo.
@@ -123,6 +153,18 @@ if exist ".env" (
     echo REMOTE_AUTH_PATH=/api/auth
     echo REMOTE_ADMIN_PATH=/api/admin
     echo PUBLIC_MENU_URL=https://www.yedigulrestorant.com/menu/
+    echo.
+    echo # ---- Pano ----
+    echo PUBLIC_SITE_URL=https://www.yedigulrestorant.com/
+    echo PANO_DB_PATH=%PANO_DB%
+    echo.
+    echo # Bos birakilirsa ilgili kart "bagli degil" gorunur, pano calisir.
+    echo IG_USER_ID=
+    echo IG_ACCESS_TOKEN=
+    echo GA4_PROPERTY_ID=
+    echo GA4_CREDENTIALS_PATH=
+    echo PLACES_API_KEY=
+    echo PLACES_PLACE_ID=
   )
   echo       .env yazildi.
 )
