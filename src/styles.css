@@ -143,6 +143,19 @@ a { color: inherit; text-decoration: none; }
 .modal-wide { width: min(880px, 100%); }
 .modal-header { padding: 20px 23px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .icon-button { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--muted); font-size: 24px; }
+
+/* Fix menü içindekiler seçici: üstte seçilenler (adet artı/eksi ile), altta
+   aranabilir ürün listesi. Ekleme tek tık — önceki hâli her kalem için 74
+   ürünlük açılır liste açtırıyordu. */
+.set-item-row { display: flex; align-items: center; gap: 11px; padding: 9px 13px; border-bottom: 1px solid var(--line); }
+.set-item-row:last-child { border-bottom: 0; }
+.qty-stepper { display: flex; align-items: center; gap: 7px; flex: none; }
+.qty-stepper .icon-button { width: 31px; height: 31px; font-size: 18px; line-height: 1; }
+.qty-stepper b { min-width: 24px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+.set-picker { max-height: 320px; overflow-y: auto; }
+.set-picker .product-row { min-height: 56px; }
+.set-add-mark { flex: none; width: 26px; text-align: center; font-size: 17px; color: var(--muted); }
+.set-picker .product-row:hover .set-add-mark { color: var(--ink); }
 .modal-body { padding: 22px 23px; overflow-y: auto; }
 .form-stack { display: grid; gap: 18px; }
 .form-grid { display: grid; gap: 13px; }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '../components/Modal.jsx';
 import { tasi } from '../lib/reorder.js';
+import { adetDegistir, urunCikar, urunEkle } from '../lib/set-items.js';
 
 const BLANK = {
   id: '', name_tr: '', name_en: '', name_ar: '', name_ru: '',
@@ -22,52 +23,111 @@ export function hamToplam(items, productsById) {
   return toplam;
 }
 
-function ItemEditor({ items, setItems, products }) {
-  const byCategory = products.reduce((acc, product) => {
-    (acc[product.category_id] ||= []).push(product);
-    return acc;
-  }, {});
+/** Tek ürünün fiyatı; varyantlıysa ilk varyant temsil eder. */
+function urunFiyati(product) {
+  return product?.price ?? product?.variants?.[0]?.price ?? null;
+}
 
-  const ekle = () => setItems((rows) => [...rows, { product_id: products[0]?.id || '', qty: 1 }]);
-  const guncelle = (index, key, value) =>
-    setItems((rows) => rows.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+/**
+ * İçindekiler seçici.
+ *
+ * Önceki hâli her kalem için 74 ürünlük bir açılır liste açtırıyordu; 6 kalemlik
+ * bir menü kurmak 6 kez avlanmak demekti. Burada seçilenler üstte durur, altta
+ * aranabilir liste vardır ve ekleme tek tıktır — Ürünler ekranının (arama +
+ * kategori çipleri) dilinin aynısı, böylece panelde tek bir arama alışkanlığı
+ * öğrenilir.
+ */
+function ItemEditor({ items, setItems, products, categories }) {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('all');
+
+  const productsById = Object.fromEntries(products.map((p) => [p.id, p]));
+  const seciliAdet = Object.fromEntries(items.map((i) => [i.product_id, i.qty]));
+
+  const q = query.trim().toLocaleLowerCase('tr');
+  const bulunan = products.filter((product) => {
+    if (category !== 'all' && product.category_id !== category) return false;
+    if (!q) return true;
+    return `${product.name_tr} ${product.name_en}`.toLocaleLowerCase('tr').includes(q);
+  });
+
+  const adet = (productId, delta) => setItems((rows) => adetDegistir(rows, productId, delta));
+  const ekle = (productId) => setItems((rows) => urunEkle(rows, productId));
+  const cikar = (productId) => setItems((rows) => urunCikar(rows, productId));
 
   return (
     <div className="form-stack">
-      <div className="section-title"><h2>İçindekiler</h2></div>
-      {items.map((row, index) => (
-        <div className="variant-row" key={index}>
-          <label className="field">
-            <span>Ürün</span>
-            <select value={row.product_id} onChange={(e) => guncelle(index, 'product_id', e.target.value)}>
-              {Object.entries(byCategory).map(([categoryId, list]) => (
-                <optgroup label={categoryId} key={categoryId}>
-                  {list.map((product) => <option key={product.id} value={product.id}>{product.name_tr}</option>)}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Adet</span>
-            <input
-              type="number" min="1" value={row.qty}
-              onChange={(e) => guncelle(index, 'qty', Math.max(1, Number(e.target.value) || 1))}
-            />
-          </label>
+      <div className="section-title">
+        <h2>İçindekiler</h2>
+        <span className="result-count">
+          {items.length ? `${items.length} kalem · ${tl(hamToplam(items, productsById))}` : 'Henüz kalem yok'}
+        </span>
+      </div>
+
+      {items.length > 0 && (
+        <section className="data-list">
+          {items.map((row) => {
+            const product = productsById[row.product_id];
+            const fiyat = urunFiyati(product);
+            return (
+              <div className="set-item-row" key={row.product_id}>
+                <span className="product-main">
+                  <strong>{product?.name_tr || row.product_id}</strong>
+                  <small>{fiyat == null ? 'fiyatsız' : `${tl(fiyat)} × ${row.qty} = ${tl(fiyat * row.qty)}`}</small>
+                </span>
+                <span className="qty-stepper">
+                  <button type="button" className="icon-button" aria-label="Azalt" onClick={() => adet(row.product_id, -1)}>−</button>
+                  <b>{row.qty}</b>
+                  <button type="button" className="icon-button" aria-label="Artır" onClick={() => adet(row.product_id, 1)}>+</button>
+                </span>
+                <button type="button" className="icon-button" aria-label="Çıkar" onClick={() => cikar(row.product_id)}>✕</button>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      <div className="toolbar">
+        <label className="search-field">
+          <span>⌕</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ürün ara…" />
+        </label>
+        <span className="result-count">{bulunan.length} ürün</span>
+      </div>
+
+      <div className="chips">
+        <button type="button" className={category === 'all' ? 'active' : ''} onClick={() => setCategory('all')}>Tümü</button>
+        {categories.map((item) => (
           <button
-            type="button" className="danger-button compact"
-            onClick={() => setItems((rows) => rows.filter((_, i) => i !== index))}
-          >Kaldır</button>
-        </div>
-      ))}
-      <button type="button" className="secondary-button" onClick={ekle} disabled={!products.length}>
-        + Ürün ekle
-      </button>
+            type="button" key={item.id}
+            className={category === item.id ? 'active' : ''}
+            onClick={() => setCategory(item.id)}
+          >{item.name_tr}</button>
+        ))}
+      </div>
+
+      <section className="data-list set-picker">
+        {bulunan.map((product) => {
+          const adet = seciliAdet[product.id] || 0;
+          const fiyat = urunFiyati(product);
+          return (
+            <button type="button" className="product-row" key={product.id} onClick={() => ekle(product.id)}>
+              <span className="set-add-mark" aria-hidden="true">{adet ? '✓' : '+'}</span>
+              <span className="product-main">
+                <strong>{product.name_tr}</strong>
+                <small>{fiyat == null ? 'fiyatsız' : tl(fiyat)}</small>
+              </span>
+              {adet > 0 && <i className="inactive-badge">{adet} adet</i>}
+            </button>
+          );
+        })}
+        {!bulunan.length && <p className="empty-text">Aramanıza uyan ürün yok.</p>}
+      </section>
     </div>
   );
 }
 
-function SetForm({ set, products, onClose, onSave, onDelete }) {
+function SetForm({ set, products, categories, onClose, onSave, onDelete }) {
   const [form, setForm] = useState(() => (set
     ? { ...set, price: set.price ?? '', is_active: set.is_active !== 0 }
     : { ...BLANK }));
@@ -132,7 +192,7 @@ function SetForm({ set, products, onClose, onSave, onDelete }) {
       <span>Menüde göster</span>
     </label>
 
-    <ItemEditor items={items} setItems={setItems} products={products} />
+    <ItemEditor items={items} setItems={setItems} products={products} categories={categories} />
 
     {/* Fix menü fiyatı bileşenlerin toplamından bağımsız belirlenir; aradaki
         marj fiyatlar oynadıkça sessizce erir. Burada gözle görünür olsun. */}
@@ -225,6 +285,7 @@ export default function FixMenus({ menu, onReload, request }) {
           key={editing?.id || 'new'}
           set={editing}
           products={menu.products || []}
+          categories={menu.categories || []}
           onClose={() => setEditing(undefined)}
           onSave={save}
           onDelete={remove}
