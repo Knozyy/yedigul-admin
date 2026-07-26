@@ -8,7 +8,10 @@ import { priceSnapshots } from './prices.js';
  * yalnızca "neyi çekelim" sorusunu yanıtlar. Sunucunun tanımadığı bir ad
  * buraya girerse GET 400 döner ve senkron hata verir — sessiz kalmaz.
  */
-export const PULL_METRICS = ['ig.followers', 'ig.reach', 'reviews.rating', 'reviews.count', 'menu.price'];
+export const PULL_METRICS = [
+  'ig.followers', 'ig.reach', 'reviews.rating', 'reviews.count',
+  'menu.price', 'menu.setPrice',
+];
 
 /**
  * Güncel menüyü çekip ürün fiyatlarını yerele yazar.

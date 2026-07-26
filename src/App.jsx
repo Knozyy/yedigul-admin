@@ -5,12 +5,13 @@ import { ConnectionGate, LoginGate } from './components/ConnectionGate.jsx';
 import Pano from './views/Pano.jsx';
 import Products from './views/Products.jsx';
 import Categories from './views/Categories.jsx';
+import FixMenus from './views/FixMenus.jsx';
 import Settings from './views/Settings.jsx';
 import Connection from './views/Connection.jsx';
 
 export default function App() {
   const [boot, setBoot] = useState(null);
-  const [menu, setMenu] = useState({ categories: [], products: [] });
+  const [menu, setMenu] = useState({ categories: [], products: [], sets: [] });
   const [panel, setPanel] = useState(null);
   const [active, setActive] = useState('pano');
   const [error, setError] = useState('');
@@ -65,7 +66,7 @@ export default function App() {
 
   async function logout() {
     await api.post('/session/logout').catch(() => {});
-    setMenu({ categories: [], products: [] });
+    setMenu({ categories: [], products: [], sets: [] });
     setPanel(null);
     setActive('pano');
     await refreshBoot();
@@ -74,7 +75,7 @@ export default function App() {
   async function disconnect() {
     if (!window.confirm('Yönetim oturumu kapatılıp SSH tüneli sonlandırılsın mı?')) return;
     setBoot(await api.post('/tunnel/disconnect'));
-    setMenu({ categories: [], products: [] });
+    setMenu({ categories: [], products: [], sets: [] });
     setPanel(null);
     setActive('pano');
   }
@@ -101,6 +102,7 @@ export default function App() {
     pano: <Pano menu={menu} panel={panel} onSynced={reloadPanel} />,
     products: <Products menu={menu} onReload={reloadMenu} request={request} publicMenuUrl={boot.publicMenuUrl} />,
     categories: <Categories menu={menu} onReload={reloadMenu} request={request} />,
+    sets: <FixMenus menu={menu} onReload={reloadMenu} request={request} />,
     settings: <Settings request={request} />,
     connection: <Connection boot={boot} onDisconnect={disconnect} />,
   };

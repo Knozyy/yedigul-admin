@@ -42,5 +42,17 @@ export function priceSnapshots(menu, day) {
       }
     });
   }
+
+  // Fix menü satış fiyatı bileşenlerin toplamından BAĞIMSIZ belirlenir; aradaki
+  // indirim marjı ürün fiyatları oynadıkça sessizce erir. Ayrı seri tutulur ki
+  // ikisi yan yana çizilebilsin.
+  for (const set of menu?.sets || []) {
+    const id = String(set?.id || '');
+    if (!id) continue;
+    const value = fiyat(set.price);
+    if (Number.isFinite(value)) {
+      items.push({ day, metric: 'menu.setPrice', entity: id, value });
+    }
+  }
   return items;
 }

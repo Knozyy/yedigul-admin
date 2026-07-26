@@ -314,3 +314,26 @@ test('arka plan senkronu düşse bile pano yanıtı 200 kalır', async () => {
   assert.ok(Array.isArray((await res.json()).panels));
   panel.close();
 });
+
+test('fix menü satış fiyatı ayrı seride toplanır', () => {
+  const menu = {
+    products: [{ id: 'levrek', price: 850, variants: [] }],
+    sets: [
+      { id: 'fix1', price: 1450 },
+      { id: 'fix2', price: null },   // fiyatsız set atlanır
+      { id: '', price: 500 },        // id siz atlanır
+    ],
+  };
+  const items = priceSnapshots(menu, '2026-07-26');
+
+  assert.deepEqual(
+    items.filter((i) => i.metric === 'menu.setPrice'),
+    [{ day: '2026-07-26', metric: 'menu.setPrice', entity: 'fix1', value: 1450 }],
+  );
+  assert.equal(items.filter((i) => i.metric === 'menu.price').length, 1, 'ürün serisi bozulmamalı');
+});
+
+test('sets alanı yoksa fiyat toplama çökmez', () => {
+  const menu = { products: [{ id: 'levrek', price: 850, variants: [] }] };
+  assert.equal(priceSnapshots(menu, '2026-07-26').length, 1);
+});

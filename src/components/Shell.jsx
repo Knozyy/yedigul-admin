@@ -2,6 +2,7 @@ const NAV = [
   ['pano', 'Pano', '◫'],
   ['products', 'Ürünler', '◇'],
   ['categories', 'Kategoriler', '≡'],
+  ['sets', 'Fix Menü', '❖'],
   ['settings', 'Ayarlar', '⚙'],
   ['connection', 'Bağlantı', '⌁'],
 ];
@@ -28,7 +29,7 @@ export default function Shell({ active, onSelect, onLogout, publicMenuUrl, child
       </aside>
       <main className="main-content">{children}</main>
       <nav className="mobile-nav" aria-label="Yönetim bölümleri">
-        {NAV.slice(0, 4).map(([id, label, icon]) => (
+        {NAV.slice(0, 5).map(([id, label, icon]) => (
           <button key={id} className={active === id ? 'active' : ''} onClick={() => onSelect(id)}>
             <span aria-hidden="true">{icon}</span><small>{label}</small>
           </button>
