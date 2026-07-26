@@ -41,6 +41,25 @@ export function loadConfig(env = process.env) {
     publicMenuUrl: String(env.PUBLIC_MENU_URL || 'https://www.yedigulrestorant.com/menu/'),
     sessionTtlMs: 8 * 60 * 60 * 1000,
     maxProxyBodyBytes: 8 * 1024 * 1024,
+
+    // ---- Pano ----
+    // Site sağlığı konektörü bu adresi ve aynı köken altındaki /api/health'i yoklar.
+    publicSiteUrl: String(env.PUBLIC_SITE_URL || 'https://www.yedigulrestorant.com/'),
+    // Konektör önbelleği ve günlük anlık görüntüler. Boşsa bellek içi çalışır.
+    dbPath: env.PANO_DB_PATH ? resolve(env.PANO_DB_PATH) : '',
+    // Boş kalırsa ilgili panel "bağlı değil" durumunda görünür, pano çalışır.
+    instagram: Object.freeze({
+      userId: String(env.IG_USER_ID || '').trim(),
+      accessToken: String(env.IG_ACCESS_TOKEN || '').trim(),
+    }),
+    ga4: Object.freeze({
+      propertyId: String(env.GA4_PROPERTY_ID || '').trim(),
+      credentialsPath: env.GA4_CREDENTIALS_PATH ? resolve(env.GA4_CREDENTIALS_PATH) : '',
+    }),
+    places: Object.freeze({
+      apiKey: String(env.PLACES_API_KEY || '').trim(),
+      placeId: String(env.PLACES_PLACE_ID || '').trim(),
+    }),
   });
 }
 

@@ -260,3 +260,81 @@ a { color: inherit; text-decoration: none; }
   .product-row img, .thumb-placeholder { width: 43px; height: 43px; }
   .edit-circle { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Pano — mevcut krem/lacivert/altın dilinde. Yeni palet değişkeni eklenmez.
+   Grafik serisi renkleri ConnectorCard.jsx içinde tanımlı ve krem zemin
+   üzerinde kontrastı ölçülmüş tonlardır.
+   --------------------------------------------------------------------------- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.pano-hero { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 34px; align-items: end; }
+.hero-num { display: block; margin: 9px 0 2px; color: var(--ink); font-family: Georgia, serif; font-size: 54px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero-label { display: block; color: var(--muted); font-size: 13px; }
+.delta { margin-top: 13px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.delta i { font-style: normal; }
+.delta.up { background: rgba(45,115,85,.1); color: var(--success); }
+.delta.down { background: rgba(166,64,56,.09); color: var(--danger); }
+.delta.flat { background: #ece9e1; color: var(--muted); }
+
+.hero-split { min-width: 0; }
+.split-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 9px; }
+.split-head > span:first-child { color: var(--muted); font-size: 12px; }
+.split-stamp { color: #93999c; font-size: 10px; }
+.split-bar { display: flex; height: 9px; border-radius: 999px; overflow: hidden; background: #e9e3d6; }
+.split-bar i { display: block; height: 100%; }
+.split-legend { margin-top: 11px; display: flex; flex-wrap: wrap; gap: 18px; color: var(--muted); font-size: 11.5px; }
+.split-legend i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 2px; vertical-align: middle; }
+.split-legend b { color: var(--ink); font-family: Georgia, serif; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.split-note { margin: 12px 0 0; color: #93999c; font-size: 10.5px; line-height: 1.6; }
+
+.rhythm-grid { display: grid; grid-template-columns: 32px repeat(7, minmax(0, 1fr)); gap: 5px; }
+.rhythm-head { padding-bottom: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-align: center; }
+.rhythm-head.we { color: #a27b2f; }
+.rhythm-week { display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; color: #a4abae; font-size: 9px; }
+.rhythm-cell { aspect-ratio: 1 / .62; display: grid; place-items: center; border-radius: 6px; border: 1px solid transparent; font-size: 11px; font-variant-numeric: tabular-nums; transition: transform .12s ease; }
+.rhythm-cell.we { outline: 1px solid rgba(215,172,82,.45); outline-offset: 2px; }
+.rhythm-cell.today { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(215,172,82,.22); }
+.rhythm-cell.empty { border: 1px dashed var(--line); }
+.rhythm-cell:not(.empty):hover { transform: translateY(-1px); }
+.rhythm-scale { margin-top: 14px; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.rhythm-scale i { width: 20px; height: 9px; border-radius: 2px; display: block; border: 1px solid var(--line); }
+
+.conn-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.conn-card { display: flex; flex-direction: column; min-height: 176px; }
+.conn-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.conn-name { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font-size: 12.5px; font-weight: 650; }
+.conn-dot { width: 9px; height: 9px; border-radius: 2px; }
+.conn-tag { padding: 4px 8px; border-radius: 999px; background: #ece9e1; color: #6c7378; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; }
+.conn-tag.ok { background: rgba(45,115,85,.1); color: var(--success); }
+.conn-tag.err { background: #f5dfdc; color: #963e36; }
+.conn-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.conn-note { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.6; }
+.conn-note strong { color: var(--ink); font-weight: 650; }
+.conn-num { display: block; color: var(--ink); font-family: Georgia, serif; font-size: 30px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.conn-sub { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.conn-foot { margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--line); color: #93999c; font-size: 9.5px; overflow-wrap: anywhere; }
+
+.health-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 13px; overflow: hidden; }
+.health-row > div { min-height: 78px; padding: 15px; display: flex; flex-direction: column; justify-content: center; gap: 6px; border-right: 1px solid var(--line); }
+.health-row > div:last-child { border-right: 0; }
+.health-row span { color: var(--muted); font-size: 10.5px; }
+.health-row b { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); font-size: 12.5px; font-weight: 650; }
+.pip { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #43a377; }
+.pip.warn { background: var(--gold); }
+.pip.bad { background: var(--danger); }
+
+@media (max-width: 980px) {
+  .conn-grid { grid-template-columns: 1fr; }
+  .health-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .health-row > div:nth-child(2) { border-right: 0; }
+  .health-row > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+}
+
+@media (max-width: 740px) {
+  .pano-hero { grid-template-columns: 1fr; gap: 22px; align-items: start; }
+  .hero-num { font-size: 42px; }
+  .health-row { grid-template-columns: 1fr; }
+  .health-row > div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .health-row > div:last-child { border-bottom: 0; }
+}

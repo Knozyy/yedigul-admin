@@ -36,6 +36,32 @@ export class RemoteClient {
     return data.token;
   }
 
+  /**
+   * Yönetim API'sinden JSON okur. Pano konektörleri bunu kullanır —
+   * proxy() bir Express isteği ister, konektörlerin ise elinde istek yok.
+   * path örneği: '/stats' veya '/history?limit=8'.
+   */
+  async read(path, token) {
+    const url = joinUrl(this.config.remoteAdminBaseUrl, `${this.config.remoteAdminPath}${path}`);
+    let response;
+    try {
+      response = await this.fetch(url, {
+        headers: { accept: 'application/json', authorization: `Bearer ${token}` },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (error) {
+      throw Object.assign(
+        new Error('Sunucudaki özel admin servisi yanıt vermiyor.'),
+        { status: 503, cause: error },
+      );
+    }
+    if (!response.ok) {
+      throw Object.assign(new Error(await parseError(response)), { status: response.status });
+    }
+    return response.json();
+  }
+
   async proxy(req, token) {
     const suffix = req.originalUrl.slice('/local-api/admin'.length) || '/';
     const url = joinUrl(this.config.remoteAdminBaseUrl, `${this.config.remoteAdminPath}${suffix}`);

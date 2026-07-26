@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n controller,ui -c blue,green \"npm:dev:server\" \"npm:dev:ui\"",
-    "dev:server": "node --watch server/index.js",
+    "dev:server": "node --disable-warning=ExperimentalWarning --watch server/index.js",
     "dev:ui": "vite --host 127.0.0.1",
     "build": "vite build",
-    "start": "node server/index.js",
-    "panel": "npm run build && node server/index.js",
-    "test": "node --test server/test/*.test.js",
-    "lint": "oxlint src server"
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "panel": "npm run build && npm start",
+    "test": "node --disable-warning=ExperimentalWarning --test server/test/*.test.js",
+    "lint": "oxlint src server shared"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

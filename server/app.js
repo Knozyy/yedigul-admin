@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import cookieParser from 'cookie-parser';
 import express from 'express';
+import { CONNECTORS, runAll } from './connectors/index.js';
 import { RemoteClient } from './remote-client.js';
 import { SessionStore, SESSION_COOKIE } from './session-store.js';
 
@@ -63,7 +64,14 @@ function securityHeaders(_req, res, next) {
   next();
 }
 
-export function createApp({ config, tunnel, remoteClient = new RemoteClient(config), distDir = null }) {
+export function createApp({
+  config,
+  tunnel,
+  cache = null,
+  remoteClient = new RemoteClient(config),
+  connectors = CONNECTORS,
+  distDir = null,
+}) {
   const app = express();
   const sessions = new SessionStore(config.sessionTtlMs);
 
@@ -102,6 +110,25 @@ export function createApp({ config, tunnel, remoteClient = new RemoteClient(conf
 
   app.get('/local-api/bootstrap', (req, res) => {
     res.json(publicSession(req.localSession, tunnel, config));
+  });
+
+  // Pano verisi. Konektörler paralel çalışır ve HER BİRİ kendi durumunu
+  // döner; biri düşerse yanıt yine 200'dür, o kartta 'error' yazar. Yalnızca
+  // okur — menü değişiklikleri eskisi gibi /local-api/admin üzerinden gider.
+  app.get('/local-api/panel', async (req, res) => {
+    const session = req.localSession;
+    const panels = await runAll(connectors, {
+      config,
+      cache,
+      remoteClient,
+      remoteToken: session.remoteToken,
+    });
+    res.json({
+      authenticated: Boolean(session.remoteToken),
+      tunnel: tunnel.status(),
+      generatedAt: new Date().toISOString(),
+      panels,
+    });
   });
 
   app.post('/local-api/tunnel/connect', csrf, async (req, res) => {

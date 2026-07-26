@@ -1,5 +1,5 @@
 const NAV = [
-  ['overview', 'Genel Bakış', '◫'],
+  ['pano', 'Pano', '◫'],
   ['products', 'Ürünler', '◇'],
   ['categories', 'Kategoriler', '≡'],
   ['settings', 'Ayarlar', '⚙'],

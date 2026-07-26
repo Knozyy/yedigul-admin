@@ -28,7 +28,47 @@ app.get('/api/admin/menu', (_req, res) => res.json({
     images: [], image_url: null,
   }],
 }));
-app.get('/api/admin/stats', (_req, res) => res.json({ today: { menu_view: 12 }, week: { menu_view: 70 }, month: { qr_scan: 33 } }));
+// Gerçek backend gibi: hafta sonu ağırlıklı, VE hiç ziyaret almayan günü
+// stats_daily'ye hiç yazmadığı için en sakin iki hafta içi günü dizide YOK.
+// Pano bunları sıfırla doldurup takvimde doğru güne oturtmak zorunda.
+function localDay(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function buildDays() {
+  const rows = [];
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const weekday = (date.getDay() + 6) % 7;
+    let base;
+    if (weekday === 5) base = 200 + Math.round(Math.random() * 60);
+    else if (weekday === 6) base = 170 + Math.round(Math.random() * 55);
+    else if (weekday === 4) base = 110 + Math.round(Math.random() * 40);
+    else base = 45 + Math.round(Math.random() * 50);
+    rows.push({ day: localDay(date), menu_view: base, qr_scan: Math.round(base * 0.62), weekday });
+  }
+  const eksiltilecek = rows
+    .filter((row) => row.weekday < 4)
+    .sort((a, b) => a.menu_view - b.menu_view)
+    .slice(0, 2)
+    .map((row) => row.day);
+  return rows.filter((row) => !eksiltilecek.includes(row.day)).map(({ weekday: _weekday, ...row }) => row);
+}
+
+const DAYS = buildDays();
+
+app.get('/api/admin/stats', (_req, res) => {
+  const today = localDay(new Date());
+  const sum = (n, key) => DAYS.slice(-n).reduce((a, d) => a + d[key], 0);
+  res.json({
+    today: DAYS.find((d) => d.day === today) || { day: today, menu_view: 0, qr_scan: 0 },
+    week: { menu_view: sum(7, 'menu_view'), qr_scan: sum(7, 'qr_scan') },
+    month: { menu_view: sum(30, 'menu_view'), qr_scan: sum(30, 'qr_scan') },
+    days: DAYS,
+  });
+});
 app.get('/api/admin/history', (_req, res) => res.json({ entries: [{ id: 1, action: 'update', entity: 'product', detail: 'Levrek: fiyat güncellendi', created_at: '2026-07-20 03:00' }] }));
 app.get('/api/admin/settings', (_req, res) => res.json({ public_base_url: 'https://www.yedigulrestorant.com', menu_path: '/menu/' }));
 
