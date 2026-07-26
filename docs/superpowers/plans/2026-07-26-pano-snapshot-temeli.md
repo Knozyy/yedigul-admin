@@ -1535,3 +1535,32 @@ cd C:/Users/kanad/Desktop/Projeler/Yedigül && git status --short
 ```
 
 Expected: `server/db.js`, `server/routes/admin.js`, `server/snapshot-metrics.js`, `server/test/*` için bekleyen değişiklik yok.
+
+---
+
+## Uygulama notu (2026-07-26 — TAMAMLANDI)
+
+Tüm görevler uygulandı. Plandan iki sapma oldu:
+
+1. **Task 1 tek başına commit edilemedi.** Şema değişikliği POST rotasını anında
+   bozuyor (eski `ON CONFLICT(day, metric)` yeni birincil anahtarla eşleşmiyor).
+   Planın "diğer testler hâlâ geçmeli" beklentisi yanlıştı. Task 1+2+3+4 tek
+   commit'te birleştirildi; ara commit depoyu kırık bırakırdı.
+
+2. **Task 10'da uydurma CSS sınıfları vardı.** Plan `ghost-button` ve
+   `form-error` kullanıyordu; ikisi de projede yok. Gerçek sınıflarla
+   değiştirildi: `secondary-button compact` ve `alert error` (hata mesajı
+   başlığın içinde değil altında, çünkü `.alert` blok tarzı).
+
+### Testlerin yakaladığı gerçek hata
+`Number(null) === 0` — fiyatı `null` olan ürünler (gün fiyatı + varyantlı
+ürünler) `0 TL` diye kaydediliyordu. Geri getirilemeyen veri olduğu için
+üretimde fark edilse bile düzeltilemezdi. `prices.js` → `fiyat()`.
+
+### Doğrulama sonucu
+- Yedigül sunucu paketi: **99/99**
+- Panel paketi: **62/62**
+- Lint temiz, derleme başarılı
+- Uçtan uca (gerçek Yedigül sunucusuna karşı, bellek içi): gerçek menüden
+  **64 fiyat** toplandı → itildi → sunucuda saklandı → boş bir panele geri
+  çekildi; yıllık aralık okuması ve 90 günlük varsayılan doğrulandı.
