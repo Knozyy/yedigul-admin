@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PanoCache, localDay } from '../cache.js';
+import { priceSnapshots } from '../snapshots/prices.js';
 
 test('entity ile yazılan kayıtlar birbirini ezmez', () => {
   const cache = new PanoCache('');
@@ -51,6 +52,52 @@ test('hasMetricOnDay günlük toplamanın tekrarını engeller', () => {
   cache.snapshot('menu.price', 850, '2026-07-25', 'levrek');
   assert.equal(cache.hasMetricOnDay('menu.price', '2026-07-25'), true);
   assert.equal(cache.hasMetricOnDay('menu.price', '2026-07-26'), false);
+});
+
+test('tekil fiyatlı ürün ürün id sini entity olarak kullanır', () => {
+  const menu = { products: [{ id: 'levrek', price: 850, variants: [] }] };
+  assert.deepEqual(priceSnapshots(menu, '2026-07-25'), [
+    { day: '2026-07-25', metric: 'menu.price', entity: 'levrek', value: 850 },
+  ]);
+});
+
+test('varyantlı ürün her varyant için ayrı satır üretir', () => {
+  const menu = {
+    products: [{
+      id: 'raki', price: null,
+      variants: [{ name_tr: 'Tek', price: 250 }, { name_tr: 'Duble', price: 400 }],
+    }],
+  };
+  assert.deepEqual(priceSnapshots(menu, '2026-07-25'), [
+    { day: '2026-07-25', metric: 'menu.price', entity: 'raki-0', value: 250 },
+    { day: '2026-07-25', metric: 'menu.price', entity: 'raki-1', value: 400 },
+  ]);
+});
+
+test('tekil fiyat varyantlara üstün gelir; ürün iki seriye bölünmez', () => {
+  const menu = {
+    products: [{ id: 'levrek', price: 850, variants: [{ name_tr: 'Porsiyon', price: 850 }] }],
+  };
+  const items = priceSnapshots(menu, '2026-07-25');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].entity, 'levrek');
+});
+
+test('gizli, fiyatsız ve id siz ürünler atlanır', () => {
+  const menu = {
+    products: [
+      { id: 'gizli', price: 100, is_hidden: 1, variants: [] },
+      { id: 'gunun', price: null, is_market_price: 1, variants: [] },
+      { id: '', price: 100, variants: [] },
+    ],
+  };
+  assert.deepEqual(priceSnapshots(menu, '2026-07-25'), []);
+});
+
+test('boş veya bozuk menü çökmez', () => {
+  assert.deepEqual(priceSnapshots(null, '2026-07-25'), []);
+  assert.deepEqual(priceSnapshots({}, '2026-07-25'), []);
+  assert.deepEqual(priceSnapshots({ products: [] }, '2026-07-25'), []);
 });
 
 test('eski entity siz şema migration ile korunur', () => {
