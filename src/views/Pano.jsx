@@ -37,6 +37,7 @@ export default function Pano({ menu, panel, onSynced }) {
   }
   const stats = panelById(panels, 'site-stats');
   const health = panelById(panels, 'health');
+  const viewed = panelById(panels, 'product-views');
   const rest = ['instagram', 'analytics', 'reviews'].map((id) => panelById(panels, id));
 
   const visible = menu.products.filter((p) => !p.is_hidden).length;
@@ -79,6 +80,8 @@ export default function Pano({ menu, panel, onSynced }) {
           ))}
         </section>
       )}
+
+      {panel && <MostViewed panel={viewed} />}
 
       {panel && <Health panel={health} />}
 
@@ -192,6 +195,75 @@ function Instagram({ data }) {
         <p className="conn-note"><strong>Token {token.daysLeft} gün sonra doluyor</strong> ve otomatik yenilenemedi.</p>
       )}
     </>
+  );
+}
+
+const PENCERELER = [['week', '7 gün'], ['month', '30 gün']];
+
+/**
+ * En çok bakılan ürünler.
+ *
+ * İki pencere de konektörle birlikte gelir; çipler arasında geçiş ağa çıkmaz.
+ * Bar en yüksek değere oranlanır — mutlak sayı değil sıralamanın nasıl
+ * dağıldığı okunsun diye (ilk ürün ikincinin iki katı mı, kıl payı mı).
+ */
+function MostViewed({ panel }) {
+  const [pencere, setPencere] = useState('week');
+  const liste = panel.data?.[pencere] || [];
+  const enYuksek = liste[0]?.views || 0;
+
+  return (
+    <section className="panel-card">
+      <div className="section-title">
+        <div><span className="eyebrow">MİSAFİR İLGİSİ</span><h2>En çok bakılan ürünler</h2></div>
+        {panel.status === 'ok' && (
+          <div className="chips">
+            {PENCERELER.map(([id, etiket]) => (
+              <button
+                type="button" key={id}
+                className={pencere === id ? 'active' : ''}
+                onClick={() => setPencere(id)}
+              >{etiket}</button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {panel.status !== 'ok' ? (
+        <p className="empty-text">
+          {panel.status === 'unconfigured' ? panel.message : `Veri alınamadı: ${panel.error}`}
+        </p>
+      ) : !liste.length ? (
+        <p className="empty-text">
+          {pencere === 'week'
+            ? 'Son 7 günde ürün detayı açılmamış.'
+            : 'Henüz yeterli veri yok — misafirler ürün detaylarını açtıkça burası dolar.'}
+        </p>
+      ) : (
+        <>
+          <div className="viewed-list">
+            {liste.map((urun, index) => (
+              <div className="viewed-row" key={urun.id}>
+                <span className="viewed-rank">{String(index + 1).padStart(2, '0')}</span>
+                <span className="viewed-name">{urun.name}</span>
+                <span className="viewed-bar" aria-hidden="true">
+                  <i style={{
+                    width: `${enYuksek ? Math.round((urun.views / enYuksek) * 100) : 0}%`,
+                    background: SERIES['product-views'],
+                  }} />
+                </span>
+                <b className="viewed-count">{num(urun.views)}</b>
+              </div>
+            ))}
+          </div>
+          <p className="split-note">
+            Bu liste ne satıldığını değil, misafirin neyi merak ettiğini gösterir — panoda
+            sipariş verisi yok. Aynı cihaz aynı ürünü 6 saat içinde tekrar açarsa bir kez sayılır.
+            Görselsiz bir ürünün listede hiç görünmemesi çoğu zaman ilgisizlik değil, fotoğraf eksikliğidir.
+          </p>
+        </>
+      )}
+    </section>
   );
 }
 

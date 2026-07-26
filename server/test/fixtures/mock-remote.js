@@ -90,6 +90,26 @@ app.get('/api/admin/stats', (_req, res) => {
     days: DAYS,
   });
 });
+// En çok bakılan ürünler. Kasten uzun bir ürün adı var: kartta ad sütununun
+// bar ve sayıyı ezmeden kısaldığı görülsün.
+app.get('/api/admin/stats/products', (_req, res) => {
+  const hafta = [
+    ['levrek', 'Izgara Levrek', 148], ['kalamar', 'Kalamar Tava', 96],
+    ['aciliezme', 'Acılı Ezme', 71], ['karides', 'Karides Güveç', 58],
+    ['fenersis', 'Fener Şiş ve Kavurma (Günün Önerisi)', 44],
+    ['midye', 'Midye Dolma', 39], ['cipura', 'Çupra', 31],
+    ['hamsi', 'Hamsi Tava', 24], ['lufer', 'Lüfer', 18], ['tekir', 'Tekir', 11],
+  ];
+  const satir = ([id, name_tr, views]) => ({ id, name_tr, views });
+  res.json({
+    week: hafta.map(satir),
+    // Ay penceresi daha geniş: sayılar büyür ve sıralama biraz değişir.
+    month: hafta
+      .map(([id, name_tr, views], i) => [id, name_tr, views * 4 + (i === 2 ? 260 : 0)])
+      .sort((a, b) => b[2] - a[2])
+      .map(satir),
+  });
+});
 app.get('/api/admin/history', (_req, res) => res.json({ entries: [{ id: 1, action: 'update', entity: 'product', detail: 'Levrek: fiyat güncellendi', created_at: '2026-07-20 03:00' }] }));
 app.get('/api/admin/settings', (_req, res) => res.json({ public_base_url: 'https://www.yedigulrestorant.com', menu_path: '/menu/' }));
 

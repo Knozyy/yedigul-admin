@@ -8,6 +8,7 @@ import { since } from '../lib/format.js';
 export const SERIES = {
   'site-stats': '#1d5fb0',
   health: '#1d5fb0',
+  'product-views': '#7a4b8c',
   instagram: '#1f7a55',
   analytics: '#8c681e',
   reviews: '#9b3b2e',

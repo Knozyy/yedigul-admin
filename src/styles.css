@@ -311,6 +311,21 @@ a { color: inherit; text-decoration: none; }
 .split-legend b { color: var(--ink); font-family: Georgia, serif; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .split-note { margin: 12px 0 0; color: #93999c; font-size: 10.5px; line-height: 1.6; }
 
+/* En çok bakılan ürünler: sıra · ad · bar · sayı. Bar ölçek payını alır,
+   ad kalanı; ikisi de minmax(0,…) ile uzun adlarda taşmadan kısalır. */
+.viewed-list { display: grid; }
+.viewed-row {
+  min-height: 47px; display: grid; align-items: center; gap: 14px;
+  grid-template-columns: 22px minmax(0, 1.1fr) minmax(60px, 1fr) 42px;
+  border-top: 1px solid var(--line);
+}
+.viewed-row:first-child { border-top: 0; }
+.viewed-rank { color: #a4abae; font-size: 10px; font-variant-numeric: tabular-nums; }
+.viewed-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-size: 13px; font-weight: 600; }
+.viewed-bar { height: 7px; border-radius: 999px; background: #e9e3d6; overflow: hidden; }
+.viewed-bar i { display: block; height: 100%; border-radius: 999px; }
+.viewed-count { color: var(--ink); font-family: Georgia, serif; font-size: 15px; font-variant-numeric: tabular-nums; text-align: right; }
+
 .rhythm-grid { display: grid; grid-template-columns: 32px repeat(7, minmax(0, 1fr)); gap: 5px; }
 .rhythm-head { padding-bottom: 4px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-align: center; }
 .rhythm-head.we { color: #a27b2f; }
@@ -360,4 +375,13 @@ a { color: inherit; text-decoration: none; }
   .health-row { grid-template-columns: 1fr; }
   .health-row > div { border-right: 0; border-bottom: 1px solid var(--line); }
   .health-row > div:last-child { border-bottom: 0; }
+}
+
+/* Dar ekranda bar ile ürün adı birbirini eziyor; ad ve sayı kalır.
+   Bu blok .viewed-row temel kuralından SONRA gelmek zorunda: özgüllük eşit,
+   kazanan dosyadaki sıra. Yukarıdaki genel 430px bloğuna konsaydı bar
+   gizlenir ama sütun şablonu ezilmez, ad dar kalırdı. */
+@media (max-width: 430px) {
+  .viewed-row { grid-template-columns: 22px minmax(0, 1fr) 42px; gap: 11px; }
+  .viewed-bar { display: none; }
 }
