@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import ConnectorCard, { SERIES } from '../components/ConnectorCard.jsx';
 import WeekRhythm from '../components/WeekRhythm.jsx';
 import { WEEKDAYS_LONG, weekdayIndex } from '../../shared/rhythm.js';
 import { clock, logTime, num, since } from '../lib/format.js';
+import { api } from '../lib/api.js';
 
 const ARROW = { up: '▲', down: '▼', flat: '■' };
 
@@ -14,8 +16,25 @@ function Metric({ label, value, note }) {
   return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{note}</small></article>;
 }
 
-export default function Pano({ menu, panel }) {
+export default function Pano({ menu, panel, onSynced }) {
   const panels = panel?.panels || [];
+
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState('');
+
+  async function esitle() {
+    setSyncing(true);
+    setSyncError('');
+    try {
+      await api.post('/panel/sync');
+      await onSynced?.();
+    } catch (error) {
+      // Elle basılan işlem: arka plan senkronunun aksine hata gizlenmez.
+      setSyncError(error.message);
+    } finally {
+      setSyncing(false);
+    }
+  }
   const stats = panelById(panels, 'site-stats');
   const health = panelById(panels, 'health');
   const rest = ['instagram', 'analytics', 'reviews'].map((id) => panelById(panels, id));
@@ -28,8 +47,15 @@ export default function Pano({ menu, panel }) {
     <div className="view-stack">
       <header className="page-heading">
         <div><span className="eyebrow">CANLI VERİTABANI</span><h1>Pano</h1></div>
-        <span className="live-badge"><i /> {panel ? clock(panel.generatedAt) : 'Bağlı'}</span>
+        <div className="page-heading-actions">
+          <button type="button" className="secondary-button compact" onClick={esitle} disabled={syncing}>
+            {syncing ? 'Eşitleniyor…' : 'Sunucuyla eşitle'}
+          </button>
+          <span className="live-badge"><i /> {panel ? clock(panel.generatedAt) : 'Bağlı'}</span>
+        </div>
       </header>
+
+      {syncError && <div className="alert error">{syncError}</div>}
 
       <section className="metrics-grid">
         <Metric label="Toplam ürün" value={menu.products.length} note={`${visible} menüde görünür`} />

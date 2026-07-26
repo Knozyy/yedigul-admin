@@ -98,7 +98,7 @@ export default function App() {
   if (!boot.authenticated) return <LoginGate onLogin={login} error={error} />;
 
   const views = {
-    pano: <Pano menu={menu} panel={panel} />,
+    pano: <Pano menu={menu} panel={panel} onSynced={reloadPanel} />,
     products: <Products menu={menu} onReload={reloadMenu} request={request} publicMenuUrl={boot.publicMenuUrl} />,
     categories: <Categories menu={menu} onReload={reloadMenu} request={request} />,
     settings: <Settings request={request} />,
