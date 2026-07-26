@@ -4,6 +4,7 @@ import { PanoCache, localDay } from '../cache.js';
 import { priceSnapshots } from '../snapshots/prices.js';
 import { RemoteClient } from '../remote-client.js';
 import { loadConfig } from '../config.js';
+import { collectPrices, pullSnapshots, pushSnapshots, PULL_METRICS } from '../snapshots/sync.js';
 
 const cfg = loadConfig({ SSH_ENABLED: '0' });
 
@@ -156,4 +157,83 @@ test('write ağ hatasında 503 ile anlaşılır mesaj verir', async () => {
     assert.equal(error.status, 503);
     return true;
   });
+});
+
+/** remoteClient taklidi: read ve write çağrılarını kaydeder. */
+function sahteIstemci({ menu = { products: [] }, rows = [], writeSonuc = { written: 0, skipped: 0, unknown: [] } } = {}) {
+  const cagrilar = { read: [], write: [] };
+  return {
+    cagrilar,
+    async read(path) {
+      cagrilar.read.push(path);
+      if (path === '/menu') return menu;
+      return { rows };
+    },
+    async write(path, body) {
+      cagrilar.write.push({ path, body });
+      return writeSonuc;
+    },
+  };
+}
+
+test('collectPrices menüyü çeker ve fiyatları yerele yazar', async () => {
+  const cache = new PanoCache('');
+  const client = sahteIstemci({ menu: { products: [{ id: 'levrek', price: 850, variants: [] }] } });
+
+  const yazilan = await collectPrices({ remoteClient: client, remoteToken: 't', cache });
+  assert.equal(yazilan, 1);
+  assert.deepEqual(cache.history('menu.price', 30, 'levrek'), [{ day: localDay(), value: 850 }]);
+  assert.deepEqual(client.cagrilar.read, ['/menu']);
+});
+
+test('collectPrices aynı gün ikinci kez menüyü çekmez', async () => {
+  const cache = new PanoCache('');
+  const client = sahteIstemci({ menu: { products: [{ id: 'levrek', price: 850, variants: [] }] } });
+
+  await collectPrices({ remoteClient: client, remoteToken: 't', cache });
+  const ikinci = await collectPrices({ remoteClient: client, remoteToken: 't', cache });
+
+  assert.equal(ikinci, 0);
+  assert.equal(client.cagrilar.read.length, 1, 'menü günde bir kez çekilmeli');
+});
+
+test('collectPrices force ile her zaman taze çeker', async () => {
+  const cache = new PanoCache('');
+  const client = sahteIstemci({ menu: { products: [{ id: 'levrek', price: 900, variants: [] }] } });
+
+  await collectPrices({ remoteClient: client, remoteToken: 't', cache });
+  await collectPrices({ remoteClient: client, remoteToken: 't', cache, force: true });
+
+  assert.equal(client.cagrilar.read.length, 2);
+  assert.deepEqual(cache.history('menu.price', 30, 'levrek'), [{ day: localDay(), value: 900 }]);
+});
+
+test('pushSnapshots yereldeki kayıtları tek çağrıda gönderir', async () => {
+  const cache = new PanoCache('');
+  cache.snapshot('ig.followers', 4100, localDay());
+  cache.snapshot('menu.price', 850, localDay(), 'levrek');
+  const client = sahteIstemci({ writeSonuc: { written: 2, skipped: 0, unknown: [] } });
+
+  const sonuc = await pushSnapshots({ remoteClient: client, remoteToken: 't', cache });
+  assert.equal(sonuc.written, 2);
+  assert.equal(client.cagrilar.write.length, 1, 'tek POST');
+  assert.equal(client.cagrilar.write[0].path, '/snapshots');
+  assert.equal(client.cagrilar.write[0].body.items.length, 2);
+});
+
+test('pushSnapshots gönderecek bir şey yoksa ağa çıkmaz', async () => {
+  const client = sahteIstemci();
+  const sonuc = await pushSnapshots({ remoteClient: client, remoteToken: 't', cache: new PanoCache('') });
+  assert.equal(sonuc.written, 0);
+  assert.equal(client.cagrilar.write.length, 0);
+});
+
+test('pullSnapshots sunucudaki günleri yerele yazar', async () => {
+  const cache = new PanoCache('');
+  const client = sahteIstemci({ rows: [{ day: '2026-07-20', entity: '', value: 4000 }] });
+
+  const cekilen = await pullSnapshots({ remoteClient: client, remoteToken: 't', cache });
+  assert.equal(cekilen, PULL_METRICS.length, 'her ölçüt için bir satır çekildi');
+  assert.deepEqual(cache.history('ig.followers', 30), [{ day: '2026-07-20', value: 4000 }]);
+  assert.equal(client.cagrilar.read.length, PULL_METRICS.length);
 });
