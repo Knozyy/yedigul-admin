@@ -117,11 +117,11 @@ a { color: inherit; text-decoration: none; }
 .row-badges i.gold { background: #f4e8c8; color: #8c681e; }
 .edit-circle { width: 31px; height: 31px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font-size: 21px; }
 .drag-mark { color: #a4abae; font-size: 21px; }
-/* Kategori satırı artık bir sarmalayıcı içinde: tutamaç sürükler, gövde
-   düzenlemeyi açar. Sarmalayıcı yüzünden .category-row her zaman kendi
+/* Sıralanabilir satır (kategori ve ürün listelerinde): tutamaç sürükler,
+   gövde düzenlemeyi açar. Sarmalayıcı yüzünden satır her zaman kendi
    ebeveyninin son çocuğu olur, o yüzden alt çizgi kuralı dışarı taşındı. */
 .category-drag { display: flex; align-items: stretch; }
-.category-drag .category-row { flex: 1; border-bottom: 0; }
+.category-drag .category-row, .category-drag .product-row { flex: 1; border-bottom: 0; }
 .category-drag:not(:last-child) { border-bottom: 1px solid var(--line); }
 .category-drag .drag-mark { display: grid; place-items: center; padding: 0 4px; cursor: grab; user-select: none; }
 .category-drag .drag-mark:active { cursor: grabbing; }

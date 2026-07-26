@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Modal from '../components/Modal.jsx';
 import ProductGallery from '../components/ProductGallery.jsx';
+import { tasi } from '../lib/reorder.js';
 import {
   MAX_IMAGES,
   MAX_VARIANTS,
@@ -222,6 +223,40 @@ export default function Products({ menu, onReload, request, publicMenuUrl }) {
     return productMatchesQuery(product, query);
   }), [menu.products, category, missingOnly, query]);
 
+  // Sürükleme yalnız tek kategori seçiliyken ve süzgeçler kapalıyken açılır.
+  // Filtrelenmiş listede taşımak anlamsız: görünen 5 üründen birini oynatınca
+  // görünmeyen 60 ürünün sırası belirsiz kalırdı.
+  const siralanabilir = category !== 'all' && !missingOnly && !query.trim();
+
+  const [surukleAktif, setSurukleAktif] = useState(false);
+  const [kaynak, setKaynak] = useState(null);
+  const [siralama, setSiralama] = useState(null); // iyimser sıra; null = sunucudaki
+  const [hata, setHata] = useState('');
+
+  const liste = (siralanabilir && siralama) || filtered;
+
+  async function birak(hedefIndeks) {
+    setSurukleAktif(false);
+    if (kaynak === null || kaynak === hedefIndeks) { setKaynak(null); return; }
+
+    const oncekiSira = liste;
+    const yeni = tasi(liste, kaynak, hedefIndeks);
+    setKaynak(null);
+    setSiralama(yeni);
+    setHata('');
+
+    try {
+      await request('put', '/admin/products/order', {
+        category_id: category, ids: yeni.map((p) => p.id),
+      });
+      await onReload();
+      setSiralama(null);
+    } catch (error) {
+      setSiralama(oncekiSira);
+      setHata(error.message);
+    }
+  }
+
   async function save(payload, pendingImages) {
     let saved = editing
       ? await request('patch', `/admin/products/${editing.id}`, payload)
@@ -247,18 +282,33 @@ export default function Products({ menu, onReload, request, publicMenuUrl }) {
       <header className="page-heading"><div><span className="eyebrow">MENÜ İÇERİĞİ</span><h1>Ürünler</h1></div><button className="primary-button" onClick={() => setEditing(null)}>+ Yeni ürün</button></header>
       <div className="toolbar"><label className="search-field"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ürün ara…" /></label><span className="result-count">{filtered.length} ürün</span></div>
       <div className="chips"><button className={missingOnly ? 'active' : ''} onClick={() => setMissingOnly((value) => !value)}>Çeviri eksiği</button><button className={category === 'all' ? 'active' : ''} onClick={() => setCategory('all')}>Tümü</button>{menu.categories.map((item) => <button key={item.id} className={category === item.id ? 'active' : ''} onClick={() => setCategory(item.id)}>{item.name_tr}</button>)}</div>
+      {hata && <div className="alert error">{hata}</div>}
+      {!siralanabilir && <p className="empty-text">Sıralamak için tek bir kategori seçin ve aramayı temizleyin.</p>}
       <section className="data-list">
-        {filtered.map((product) => {
+        {liste.map((product, index) => {
           const imageUrl = product.image_url ? new URL(product.image_url, publicMenuUrl).href : '';
           const missingLanguages = missingProductTranslationCodes(product);
-          return <button className="product-row" key={product.id} onClick={() => setEditing(product)}>
+          const row = <button className="product-row" key={product.id} onClick={() => setEditing(product)}>
             {imageUrl ? <img src={imageUrl} alt="" /> : <span className="thumb-placeholder">Y</span>}
             <span className="product-main"><strong>{product.name_tr}</strong><small>{categoriesById[product.category_id]?.name_tr || product.category_id} · {priceLabel(product)}</small></span>
             <span className="row-badges">{missingLanguages.map((code) => <i className="warn" key={code}>{code.toUpperCase()} eksik</i>)}{product.is_hidden ? <i>Gizli</i> : null}{product.is_available === 0 ? <i className="warn">Tükendi</i> : null}{product.popular ? <i className="gold">Popüler</i> : null}{product.variants?.length ? <i>{product.variants.length} seçenek</i> : null}</span>
             <span className="edit-circle">›</span>
           </button>;
+          if (!siralanabilir) return row;
+          return <div
+            className={`category-drag${kaynak === index ? ' dragging' : ''}`}
+            key={product.id}
+            draggable={surukleAktif}
+            onDragStart={() => setKaynak(index)}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={() => birak(index)}
+            onDragEnd={() => { setSurukleAktif(false); setKaynak(null); }}
+          >
+            <span className="drag-mark" title="Sıralamak için sürükleyin" onPointerDown={() => setSurukleAktif(true)}>≡</span>
+            {row}
+          </div>;
         })}
-        {!filtered.length && <p className="empty-text">Bu filtreye uyan ürün yok.</p>}
+        {!liste.length && <p className="empty-text">Bu filtreye uyan ürün yok.</p>}
       </section>
       {editing !== undefined && <Modal wide title={editing ? 'Ürünü düzenle' : 'Yeni ürün'} onClose={() => setEditing(undefined)}><ProductForm key={editing?.id || 'new'} product={editing} categories={menu.categories} onClose={() => setEditing(undefined)} onSave={save} onDelete={remove} request={request} publicMenuUrl={publicMenuUrl} onGalleryChange={galleryChanged} /></Modal>}
     </div>
