@@ -36,9 +36,10 @@ app.put('/api/admin/categories/order', (req, res) => {
   res.json({ ok: true, count: ids.length });
 });
 
-app.get('/api/admin/menu', (_req, res) => res.json({
-  categories: CATEGORIES,
-  products: [{
+// Ürünler de modül düzeyinde: PATCH bunları gerçekten değiştirir, böylece
+// günlük fiyat ekranı tarayıcıda uçtan uca sürülebilir.
+const PRODUCTS = [
+  {
     id: 'levrek', category_id: 'fish', name_tr: 'Levrek', name_en: 'Sea Bass', name_ar: 'قاروص', name_ru: 'Сибас',
     desc_tr: 'Günlük taze levrek.', desc_en: 'Daily fresh sea bass.', desc_ar: '', desc_ru: '',
     price: 850, kcal: 320, portion: '350 gr', sort: 1, is_market_price: 0, is_available: 1,
@@ -47,8 +48,40 @@ app.get('/api/admin/menu', (_req, res) => res.json({
     alg_tr: ['Balık'], alg_en: ['Fish'], alg_ar: [], alg_ru: [],
     variants: [{ name_tr: 'Porsiyon', name_en: 'Portion', name_ar: '', name_ru: '', price: 850 }],
     images: [], image_url: null,
-  }],
+  },
+  // Piyasa fiyatlı üçlü: biri fiyatı girilmiş, ikisi boş — günlük fiyat
+  // ekranının her iki satır durumu da ilk açılışta görünsün.
+  urun('palamut', 'Palamut', { price: null }),
+  urun('kalkan', 'Kalkan', { price: 1450 }),
+  urun('tuzdalevrek', 'Tuzda Levrek', { price: null, is_hidden: 1 }),
+];
+
+function urun(id, name_tr, extra = {}) {
+  return {
+    id, category_id: 'fish', name_tr, name_en: name_tr, name_ar: '', name_ru: '',
+    desc_tr: '', desc_en: '', desc_ar: '', desc_ru: '',
+    price: null, kcal: null, portion: null, sort: 9, is_market_price: 1, is_available: 1,
+    is_hidden: 0, popular: 0, chef: 0, diet: [],
+    ing_tr: [], ing_en: [], ing_ar: [], ing_ru: [],
+    alg_tr: [], alg_en: [], alg_ar: [], alg_ru: [],
+    variants: [], images: [], image_url: null, ...extra,
+  };
+}
+
+app.get('/api/admin/menu', (_req, res) => res.json({
+  categories: CATEGORIES,
+  products: PRODUCTS,
 }));
+
+// Gerçek sunucunun kuralı: gövdede is_market_price truthy görülürse fiyat
+// ZORLA null olur. Panel yanlışlıkla bayrağı gönderirse burada da fark edilsin.
+app.patch('/api/admin/products/:id', (req, res) => {
+  const product = PRODUCTS.find((p) => p.id === req.params.id);
+  if (!product) return res.status(404).json({ error: 'Ürün bulunamadı' });
+  for (const [key, value] of Object.entries(req.body || {})) product[key] = value;
+  if (req.body?.is_market_price) product.price = null;
+  res.json(product);
+});
 // Gerçek backend gibi: hafta sonu ağırlıklı, VE hiç ziyaret almayan günü
 // stats_daily'ye hiç yazmadığı için en sakin iki hafta içi günü dizide YOK.
 // Pano bunları sıfırla doldurup takvimde doğru güne oturtmak zorunda.
