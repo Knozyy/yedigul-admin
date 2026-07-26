@@ -80,7 +80,7 @@ Sabit `Set` yerine, her ölçütün kendi kuralını taşıdığı bir kayıt:
 Doğrulama kuralları:
 - `metric` kayıtta bulunmalı
 - `entity` kuralı: `yok` → boş dize olmalı; `zorunlu` → boş olmamalı
-- `entity` biçimi: `^[A-Za-z0-9_.-]{1,32}$`
+- `entity` biçimi: `^[A-Za-z0-9_.-]{1,80}$`
 - `value` sonlu sayı olmalı
 - `day` `YYYY-MM-DD` biçiminde ve **gelecekte olmamalı**
 
@@ -153,9 +153,14 @@ Görüntüleme yerelden okumaya devam eder (`cache.history`) — hızlı, ekstra
 ### Fiyat toplama
 Kaynak `GET /admin/menu`. Her ürün için:
 
-- Tekil fiyatlı ürün → `entity = "<ürünId>"`, değer = `price`
-- Varyantlı ürün (tekil `price` null) → her varyant ayrı satır,
+- `price` sonlu bir sayıysa → `entity = "<ürünId>"`, değer = `price`
+- Aksi hâlde varyant varsa → her varyant ayrı satır,
   `entity = "<ürünId>-<varyantSırası>"` (0'dan başlayan dizi indeksi)
+
+**Öncelik kesindir:** ikisi birden doluysa (`price` hem dolu hem varyant var)
+tekil fiyat kazanır, varyantlar yazılmaz. Böylece aynı ürün iki ayrı seriye
+bölünmez. Ürün id'leri sunucuda `^[A-Za-z0-9_-]{1,64}$` ile sınırlı olduğundan
+`entity` biçim kuralına her zaman uyar.
 
 **Kabul edilen risk:** varyantlar yeniden sıralanırsa indeks kayar ve o seri
 bozulur. Alternatif olan varyant adı çeviriyle değişebildiği için daha kırılgan.
