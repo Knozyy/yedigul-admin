@@ -7,6 +7,7 @@ import {
   MAX_VARIANTS,
   buildProductPayload,
   listToText,
+  priceLabel,
   truthy,
 } from '../lib/product-model.js';
 import { missingProductTranslationCodes, productMatchesQuery } from '../lib/i18n.js';
@@ -42,15 +43,6 @@ function formValue(product, categories) {
     is_market_price: truthy(product.is_market_price), is_available: truthy(product.is_available),
     is_hidden: truthy(product.is_hidden), popular: truthy(product.popular), chef: truthy(product.chef),
   };
-}
-
-function priceLabel(product) {
-  if (product.is_market_price) return product.price == null ? 'Piyasa fiyatı' : `Günlük ${product.price} TL`;
-  if (product.variants?.length) {
-    const values = product.variants.map((variant) => Number(variant.price));
-    return `${Math.min(...values)}–${Math.max(...values)} TL`;
-  }
-  return product.price == null ? '—' : `${product.price} TL`;
 }
 
 function TranslationFields({ form, set }) {

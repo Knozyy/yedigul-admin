@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildProductPayload, normalizeVariantRows, textToList } from '../../src/lib/product-model.js';
+import { buildProductPayload, normalizeVariantRows, priceLabel, textToList } from '../../src/lib/product-model.js';
 
 const base = {
   id: 'levrek', category_id: 'fish', name_tr: 'Levrek', name_en: 'Sea Bass',
@@ -44,4 +44,20 @@ test('yeni veya sabit fiyatlı ürünü piyasaya geçirirken fiyatı null yapar'
   const payload = buildProductPayload({ ...base, is_market_price: true, price: '850' }, base);
   assert.equal(payload.is_market_price, true);
   assert.equal(payload.price, null);
+});
+
+// priceLabel: uzak API is_market_price'ı 1|0 döndürür, boolean değil.
+test('piyasa fiyatlı ürün fiyat girilene kadar "Piyasa fiyatı" gösterir', () => {
+  assert.equal(priceLabel({ is_market_price: 1, price: null }), 'Piyasa fiyatı');
+  assert.equal(priceLabel({ is_market_price: 1, price: 850 }), 'Günlük 850 TL');
+});
+
+test('varyantlı ürün fiyat aralığı gösterir', () => {
+  const product = { is_market_price: 0, variants: [{ price: 850 }, { price: 400 }, { price: 600 }] };
+  assert.equal(priceLabel(product), '400–850 TL');
+});
+
+test('fiyatsız sabit ürün tire gösterir', () => {
+  assert.equal(priceLabel({ is_market_price: 0, price: null }), '—');
+  assert.equal(priceLabel({ is_market_price: 0, price: 650 }), '650 TL');
 });

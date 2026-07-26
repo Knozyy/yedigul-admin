@@ -51,6 +51,23 @@ export function normalizeVariantRows(rows = []) {
   return variants;
 }
 
+/**
+ * Ürün listesinde ve günlük fiyat ekranında görünen fiyat metni.
+ *
+ * Piyasa fiyatlı üründe `price` iki farklı şey demek: null ise günün fiyatı
+ * henüz girilmemiş (menüde "Piyasa Fiyatı" yazar), doluysa girilmiş.
+ */
+export function priceLabel(product) {
+  if (truthy(product?.is_market_price)) {
+    return product.price == null ? 'Piyasa fiyatı' : `Günlük ${product.price} TL`;
+  }
+  if (product?.variants?.length) {
+    const values = product.variants.map((variant) => Number(variant.price));
+    return `${Math.min(...values)}–${Math.max(...values)} TL`;
+  }
+  return product?.price == null ? '—' : `${product.price} TL`;
+}
+
 export function buildProductPayload(form, original = null) {
   const nameTr = String(form.name_tr || '').trim();
   const nameEn = String(form.name_en || '').trim();
