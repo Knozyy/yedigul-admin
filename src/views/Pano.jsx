@@ -38,7 +38,16 @@ export default function Pano({ menu, panel, onSynced }) {
   const stats = panelById(panels, 'site-stats');
   const health = panelById(panels, 'health');
   const viewed = panelById(panels, 'product-views');
-  const rest = ['instagram', 'analytics', 'reviews'].map((id) => panelById(panels, id));
+  // Anahtarı girilmemiş kaynaklar GİZLENİR. Başta "pano ilk günden tüm düzenini
+  // göstersin" diye yer tutucu olarak duruyorlardı; fazlar uzayınca üç tane
+  // kalıcı "bağlı değil" kartına dönüştüler ve yalnız yer kapladılar.
+  // Anahtar .env'e girilince kart kendiliğinden geri gelir.
+  //
+  // 'error' GİZLENMEZ: orada kaynak yapılandırılmış ama çağrı düşmüş demektir,
+  // kullanıcının görmesi gereken tam olarak budur.
+  const rest = ['instagram', 'analytics', 'reviews']
+    .map((id) => panelById(panels, id))
+    .filter((item) => item.status !== 'unconfigured');
 
   const visible = menu.products.filter((p) => !p.is_hidden).length;
   const unavailable = menu.products.filter((p) => p.is_available === 0).length;
@@ -71,7 +80,7 @@ export default function Pano({ menu, panel, onSynced }) {
         ? <SiteStats data={stats.data} fetchedAt={stats.fetchedAt} />
         : panel && <StatsFallback panel={stats} />}
 
-      {panel && (
+      {panel && rest.length > 0 && (
         <section className="conn-grid">
           {rest.map((item) => (
             <ConnectorCard key={item.id} panel={item}>

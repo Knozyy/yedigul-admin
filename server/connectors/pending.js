@@ -4,10 +4,12 @@ import { Unconfigured } from './runner.js';
  * Henüz uygulanmamış konektörler (Faz 3-4). Instagram artık
  * `instagram.js` içinde gerçek uygulamasıyla duruyor.
  *
- * Boş yer tutucu yerine gerçek konektör kaydı olmalarının sebebi: pano ilk
- * günden tüm düzenini gösterir, hangi anahtarın eksik olduğunu söyler, ve
- * sıra o faza geldiğinde yalnızca load() gövdesi dolar — arayüzde hiçbir
- * şey değişmez.
+ * Boş yer tutucu yerine gerçek konektör kaydı olmalarının sebebi: sıra o faza
+ * geldiğinde yalnızca load() gövdesi dolar, arayüzde hiçbir şey değişmez.
+ *
+ * DİKKAT: 'unconfigured' kartlar panoda ARTIK ÇİZİLMİYOR (bkz. Pano.jsx).
+ * Bu kayıtların görünür bir çıktısı yok; anahtar .env'e girilince kart
+ * kendiliğinden ortaya çıkar.
  *
  * Anahtar kontrolü guard() içindedir: önbellekten önce çalışır, böylece
  * .env'den anahtar silindiğinde panel TTL boyunca bağlıymış gibi görünmez.
