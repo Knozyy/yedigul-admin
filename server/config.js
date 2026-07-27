@@ -64,8 +64,10 @@ export function loadConfig(env = process.env) {
     // panelin geri kalanı etkilenmez.
     gemini: Object.freeze({
       apiKey: String(env.GEMINI_API_KEY || '').trim(),
-      // Model adları hızlı değişiyor — sürüm atlayınca kod değil .env güncellensin.
-      model: String(env.GEMINI_MODEL || '').trim() || 'gemini-2.5-flash-lite',
+      // Sürüm numaralı model adları emekliye ayrılıyor ("no longer available to
+      // new users") — bu yüzden varsayılan bir TAKMA AD: Google güncelini
+      // gösterdikçe kendiliğinden taşınır. Sabitlemek isteyen .env'den geçer.
+      model: String(env.GEMINI_MODEL || '').trim() || 'gemini-flash-lite-latest',
     }),
   });
 }
