@@ -90,9 +90,14 @@ function localDay(d) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+// Gerçek sunucu gibi: sayaç belli bir günde başlar, öncesinde HİÇ satır yoktur.
+// 200 gün "Bu yıl" ve haftalık kovayı denemeye yeter, ama yılın başını
+// kapsamaz — kısmi kapsam uyarısı da böylece görülür.
+const SAYAC_BASLANGICI = 200;
+
 function buildDays() {
   const rows = [];
-  for (let i = 29; i >= 0; i--) {
+  for (let i = SAYAC_BASLANGICI; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
     const weekday = (date.getDay() + 6) % 7;
@@ -113,14 +118,28 @@ function buildDays() {
 
 const DAYS = buildDays();
 
-app.get('/api/admin/stats', (_req, res) => {
+app.get('/api/admin/stats', (req, res) => {
   const today = localDay(new Date());
   const sum = (n, key) => DAYS.slice(-n).reduce((a, d) => a + d[key], 0);
+
+  // Gerçek uçla aynı sözleşme: from/to YALNIZ days[]'i süzer, parametresiz
+  // çağrı son 30 günü verir, today/week/month her zaman gerçek bugüne göre.
+  const { from, to } = req.query;
+  const istendi = from !== undefined || to !== undefined;
+  const bicim = /^\d{4}-\d{2}-\d{2}$/;
+  if (istendi && [from, to].some((v) => v !== undefined && !bicim.test(String(v)))) {
+    return res.status(400).json({ error: 'Geçersiz tarih (YYYY-AA-GG bekleniyor).' });
+  }
+  const bas = istendi ? (from ?? '0000-01-01') : localDay(new Date(Date.now() - 29 * 86400000));
+  const bit = istendi ? (to ?? today) : today;
+  if (bas > bit) return res.status(400).json({ error: 'from, to tarihinden büyük olamaz.' });
+
   res.json({
     today: DAYS.find((d) => d.day === today) || { day: today, menu_view: 0, qr_scan: 0 },
     week: { menu_view: sum(7, 'menu_view'), qr_scan: sum(7, 'qr_scan') },
     month: { menu_view: sum(30, 'menu_view'), qr_scan: sum(30, 'qr_scan') },
-    days: DAYS,
+    days: DAYS.filter((d) => d.day >= bas && d.day <= bit),
+    firstDay: DAYS.length ? DAYS[0].day : null,
   });
 });
 // En çok bakılan ürünler. Kasten uzun bir ürün adı var: kartta ad sütununun

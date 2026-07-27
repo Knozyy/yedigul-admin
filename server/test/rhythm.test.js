@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   fillDays,
+  groupByWeekday,
   isWeekend,
   makeIntensity,
   toWeekGrid,
   weekdayDelta,
+  weekdayDeltas,
   weekdayIndex,
 } from '../../shared/rhythm.js';
 
@@ -106,4 +108,47 @@ test('ölçek bozuk dağılımlarda çökmez', () => {
 
   const duz = makeIntensity(Array(30).fill(80));
   assert.equal(duz(80), 1, 'tüm günler eşitse sahte fark üretilmemeli');
+});
+
+// --- Dönem kartı: gün başına gruplama ve değişim ---
+
+const seri = (...gunler) => gunler.map(([day, menu_view]) => ({ day, menu_view, qr_scan: 0 }));
+
+test('groupByWeekday yediye böler ve grup içinde tarih sırası korunur', () => {
+  const days = seri(
+    ['2026-07-06', 10], ['2026-07-07', 20], // pzt, sal
+    ['2026-07-13', 30], ['2026-07-14', 40], // pzt, sal
+  );
+  const groups = groupByWeekday(days);
+  assert.equal(groups.length, 7);
+  assert.deepEqual(groups[0].days.map((d) => d.day), ['2026-07-06', '2026-07-13']);
+  assert.equal(groups[0].label, 'Pzt');
+  assert.deepEqual(groups[2].days, [], 'çarşamba boş kalır');
+});
+
+test('weekdayDeltas her günü kendi son iki tekrarıyla karşılaştırır', () => {
+  const days = seri(['2026-07-06', 100], ['2026-07-13', 120], ['2026-07-07', 50], ['2026-07-14', 40]);
+  const [pzt, sal] = weekdayDeltas(days);
+  assert.equal(pzt.current.menu_view, 120);
+  assert.equal(pzt.delta.percent, 20);
+  assert.equal(pzt.delta.direction, 'up');
+  assert.equal(sal.delta.percent, -20);
+  assert.equal(sal.delta.direction, 'down');
+});
+
+test('tek tekrar varsa değişim üretilmez', () => {
+  const [pzt] = weekdayDeltas(seri(['2026-07-06', 100]));
+  assert.equal(pzt.current.menu_view, 100);
+  assert.equal(pzt.delta, null);
+});
+
+test('önceki sıfırsa sonsuz yüzde üretilmez', () => {
+  const [pzt] = weekdayDeltas(seri(['2026-07-06', 0], ['2026-07-13', 90]));
+  assert.equal(pzt.delta, null);
+});
+
+test('hiç veri yoksa yedi grup yine döner', () => {
+  const groups = weekdayDeltas([]);
+  assert.equal(groups.length, 7);
+  assert.equal(groups[0].current, null);
 });

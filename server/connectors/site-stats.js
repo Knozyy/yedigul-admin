@@ -13,7 +13,7 @@ export const siteStats = {
   label: 'Site hareketliliği',
   ttlMs: 2 * 60 * 1000,
   // Üretilen verinin şekli değiştiğinde artır (bkz. cache.read).
-  version: 2,
+  version: 3,
 
   guard({ remoteToken }) {
     if (!remoteToken) {
@@ -52,6 +52,10 @@ export const siteStats = {
 
     return {
       endDay,
+      // Sayacın başladığı gün. Dönem kartı "sıfır ziyaret" ile "henüz
+      // sayılmıyordu"yu ayırmak için buna bakar; tarih gömmek yerine
+      // sunucudan gelir. Eski sunucuda alan yok → null.
+      firstDay: stats.firstDay ?? null,
       days,
       today: {
         menu_view: today.menu_view,

@@ -123,3 +123,43 @@ export function formatDayLabel(iso) {
   const date = parseDay(iso);
   return `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 }
+
+/**
+ * Seriyi haftanın gününe göre yediye böler. Her grup kendi içinde tarih
+ * sırasında kalır — "bu cumartesi geçen cumartesiye göre" sorusu bu diziden
+ * okunur.
+ */
+export function groupByWeekday(days = []) {
+  const groups = WEEKDAYS.map((label, index) => ({ index, label, days: [] }));
+  for (const entry of days) {
+    if (!entry?.day) continue;
+    groups[weekdayIndex(entry.day)].days.push(entry);
+  }
+  return groups;
+}
+
+/**
+ * Gün başına değişim: o günün aralıktaki SON İKİ tekrarı karşılaştırılır.
+ *
+ * weekdayDelta()'dan farkı, bunun serinin son gününe değil her günün kendi
+ * geçmişine bakması. İkisi de duruyor: kahraman satırı öbürünü kullanıyor.
+ *
+ * Tek tekrar varsa ya da önceki sıfırsa null — sonsuz yüzde üretilmez.
+ */
+export function weekdayDeltas(days = [], metric = 'menu_view') {
+  return groupByWeekday(days).map((group) => {
+    const seri = group.days;
+    const current = seri[seri.length - 1] || null;
+    const previous = seri[seri.length - 2] || null;
+
+    let delta = null;
+    if (current && previous && previous[metric] > 0) {
+      const change = (current[metric] - previous[metric]) / previous[metric];
+      delta = {
+        percent: Math.round(change * 100),
+        direction: change === 0 ? 'flat' : change > 0 ? 'up' : 'down',
+      };
+    }
+    return { ...group, current, previous, delta };
+  });
+}

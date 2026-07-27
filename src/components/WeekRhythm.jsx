@@ -1,79 +1,100 @@
-import { formatDayLabel, isWeekend, makeIntensity, toWeekGrid, WEEKDAYS } from '../../shared/rhythm.js';
+import { bucketDays, pickForm } from '../../shared/period.js';
+import { formatDayLabel, isWeekend, weekdayDeltas } from '../../shared/rhythm.js';
+import { num } from '../lib/format.js';
+
+const ARROW = { up: '▲', down: '▼', flat: '■' };
 
 /**
- * Açık tema rampası: lacivert, krem zemin üzerine artan yoğunlukla.
- * Kontrast ölçülerek seçildi — 4. kademeden itibaren zemin koyulaştığı için
- * hücredeki gün sayısı açık renge döner (en düşük 5.5:1).
+ * Dönem kartının grafiği. Biçimi KULLANICI SEÇMEZ, gün sayısı belirler:
+ * kısa aralıkta haftanın günleri yan yana (asıl soru "bu cumartesi geçen
+ * cumartesiye göre nasıl"), uzun aralıkta kronolojik çubuk.
+ *
+ * Önceki ısı haritası kaldırıldı: renk büyüklük kodluyordu ve sıfır ziyaretli
+ * gün ile pencere dışı gün birbirine karışıyordu. Artık yükseklik kodluyor.
  */
-const RAMP = [
-  { bg: 'transparent', fg: 'var(--muted)' },
-  { bg: '#e7e7e5', fg: '#0b2239' },
-  { bg: '#c0c4c6', fg: '#0b2239' },
-  { bg: '#8f98a0', fg: '#0b2239' },
-  { bg: '#596876', fg: '#fffdf8' },
-  { bg: '#23384c', fg: '#fffdf8' },
-];
+export default function WeekRhythm({ days, metric = 'menu_view' }) {
+  if (!days?.length) return <p className="empty-text">Bu dönemde gösterilecek veri yok.</p>;
 
-export default function WeekRhythm({ days, endDay, metric = 'menu_view' }) {
-  if (!days?.length) return <p className="empty-text">Gösterilecek veri yok.</p>;
+  return pickForm(days.length) === 'weekday'
+    ? <WeekdayPanels days={days} metric={metric} />
+    : <Timeline days={days} metric={metric} />;
+}
 
-  const rows = toWeekGrid(days);
-  const intensity = makeIntensity(days.map((d) => d[metric]));
+/** B — haftanın her günü için mini panel, altında son değer ve değişim. */
+function WeekdayPanels({ days, metric }) {
+  const groups = weekdayDeltas(days, metric);
+  const enYuksek = Math.max(1, ...days.map((d) => Number(d[metric]) || 0));
 
   return (
-    <>
-      <div className="rhythm-grid">
-        <div />
-        {WEEKDAYS.map((label, i) => (
-          <div key={label} className={`rhythm-head${i > 4 ? ' we' : ''}`}>{label}</div>
-        ))}
+    <div className="wd-grid">
+      {groups.map((group) => (
+        <div className="wd-panel" key={group.label}>
+          <span className={`wd-name${group.index > 4 ? ' we' : ''}`}>{group.label}</span>
 
-        {rows.map((row, rowIndex) => (
-          <Row
-            key={row.find(Boolean)?.day || `bos-${rowIndex}`}
-            row={row}
-            rowIndex={rowIndex}
-            endDay={endDay}
-            metric={metric}
-            intensity={intensity}
-          />
-        ))}
-      </div>
+          <div className="wd-bars">
+            {group.days.map((entry, index) => {
+              const value = Number(entry[metric]) || 0;
+              const sonuncu = index === group.days.length - 1;
+              return (
+                <i
+                  key={entry.day}
+                  className={sonuncu ? 'son' : ''}
+                  style={{ height: `${Math.max(2, Math.round((value / enYuksek) * 100))}%` }}
+                  title={`${formatDayLabel(entry.day)} — ${num(value)}`}
+                />
+              );
+            })}
+            {!group.days.length && <span className="wd-bos">—</span>}
+          </div>
 
-      <div className="rhythm-scale">
-        <span>az</span>
-        {RAMP.slice(1).map((step) => <i key={step.bg} style={{ background: step.bg }} />)}
-        <span>çok</span>
-      </div>
-    </>
+          <b className="wd-value">{group.current ? num(group.current[metric]) : '—'}</b>
+          {group.delta ? (
+            <small className={`wd-delta ${group.delta.direction}`}>
+              {ARROW[group.delta.direction]} %{Math.abs(group.delta.percent)}
+            </small>
+          ) : (
+            <small className="wd-delta flat">&nbsp;</small>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 
-function Row({ row, rowIndex, endDay, metric, intensity }) {
+/** C — kronolojik çubuk. Çubuk sayısı eşiği aşarsa haftalık kovaya toplanır. */
+function Timeline({ days, metric }) {
+  const { unit, buckets } = bucketDays(days);
+  const enYuksek = Math.max(1, ...buckets.map((b) => Number(b[metric]) || 0));
+  const ilk = buckets[0];
+  const son = buckets[buckets.length - 1];
+
   return (
     <>
-      <div className="rhythm-week">{rowIndex + 1}H</div>
-      {row.map((entry, index) => {
-        if (!entry) return <div key={`bos-${rowIndex}-${index}`} className="rhythm-cell empty" aria-hidden="true" />;
-        const step = RAMP[intensity(entry[metric])];
-        const classes = [
-          'rhythm-cell',
-          isWeekend(entry.day) ? 'we' : '',
-          entry.day === endDay ? 'today' : '',
-        ].filter(Boolean).join(' ');
-        const label = `${formatDayLabel(entry.day)} — ${entry[metric]} görüntüleme`;
-        return (
-          <div
-            key={entry.day}
-            className={classes}
-            style={{ background: step.bg, color: step.fg }}
-            title={label}
-          >
-            <span aria-hidden="true">{Number(entry.day.slice(-2))}</span>
-            <span className="sr-only">{label}</span>
-          </div>
-        );
-      })}
+      <div className="tl-bars">
+        {buckets.map((bucket) => {
+          const value = Number(bucket[metric]) || 0;
+          // Haftalık kovada "hafta sonu" diye bir şey yok; yalnız günlükte işaretlenir.
+          const hs = unit === 'day' && isWeekend(bucket.day);
+          const etiket = unit === 'day'
+            ? `${formatDayLabel(bucket.day)} — ${num(value)}`
+            : `${formatDayLabel(bucket.from)} – ${formatDayLabel(bucket.to)} — ${num(value)}`;
+          return (
+            <i
+              key={bucket.day}
+              className={hs ? 'we' : ''}
+              style={{ height: `${Math.max(2, Math.round((value / enYuksek) * 100))}%` }}
+              title={etiket}
+            />
+          );
+        })}
+      </div>
+      <div className="tl-axis">
+        <span>{formatDayLabel(ilk.from ?? ilk.day)}</span>
+        <span className="result-count">
+          {unit === 'week' ? `${buckets.length} hafta` : `${buckets.length} gün`}
+        </span>
+        <span>{formatDayLabel(son.to ?? son.day)}</span>
+      </div>
     </>
   );
 }

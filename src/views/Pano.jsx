@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ConnectorCard, { SERIES } from '../components/ConnectorCard.jsx';
-import WeekRhythm from '../components/WeekRhythm.jsx';
+import PeriodRhythm from '../components/PeriodRhythm.jsx';
 import { WEEKDAYS_LONG, weekdayIndex } from '../../shared/rhythm.js';
 import { clock, logTime, num, since } from '../lib/format.js';
 import { api } from '../lib/api.js';
@@ -158,19 +158,7 @@ function SiteStats({ data, fetchedAt }) {
         </div>
       </section>
 
-      <section className="panel-card">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow">SON 30 GÜN</span>
-            <h2>Hafta ritmi</h2>
-          </div>
-        </div>
-        <p className="form-hint">
-          Sütunlar haftanın günleri — aşağı doğru okuyunca aynı günü haftalar arasında
-          karşılaştırırsın. Hafta sonları çerçeveli.
-        </p>
-        <WeekRhythm days={days} endDay={endDay} />
-      </section>
+      <PeriodRhythm days={days} firstDay={data.firstDay ?? null} />
     </>
   );
 }
