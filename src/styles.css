@@ -314,6 +314,10 @@ a { color: inherit; text-decoration: none; }
 .split-legend b { color: var(--ink); font-family: Georgia, serif; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .split-note { margin: 12px 0 0; color: #93999c; font-size: 10.5px; line-height: 1.6; }
 
+/* Çevir düğmesi + altındaki tek satırlık sonuç/hata. Blok başlığının sağında. */
+.translate-slot { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; text-align: end; }
+.translate-slot .form-hint { margin: 0; }
+
 .daily-price-input { width: 116px; flex: 0 0 auto; height: 42px; padding: 0 13px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,253,248,.7); outline: 0; text-align: end; font-variant-numeric: tabular-nums; }
 .daily-row-error { color: var(--danger); font-weight: 600; }
 

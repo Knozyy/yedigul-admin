@@ -6,6 +6,7 @@ import { CONNECTORS, runAll } from './connectors/index.js';
 import { RemoteClient } from './remote-client.js';
 import { collectPrices, pullSnapshots, pushSnapshots, syncInBackground } from './snapshots/sync.js';
 import { SessionStore, SESSION_COOKIE } from './session-store.js';
+import { Translator } from './translate.js';
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]', '::1']);
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -41,6 +42,9 @@ function publicSession(session, tunnel, config) {
     authenticated: Boolean(session.remoteToken),
     tunnel: tunnel.status(),
     publicMenuUrl: config.publicMenuUrl,
+    // Yalnızca BOOLEAN. Anahtarın kendisi tarayıcıya inmez; arayüzün tek
+    // ihtiyacı "Çevir" düğmesini çizip çizmeyeceğini bilmek.
+    translate: Boolean(config.gemini.apiKey),
   };
 }
 
@@ -71,6 +75,7 @@ export function createApp({
   cache = null,
   remoteClient = new RemoteClient(config),
   connectors = CONNECTORS,
+  translator = new Translator(config),
   distDir = null,
 }) {
   const app = express();
@@ -154,6 +159,21 @@ export function createApp({
       res.json({ collected, pushed: pushed.written ?? 0, pulled });
     } catch (error) {
       res.status(errorStatus(error, 502)).json({ error: error.message });
+    }
+  });
+
+  // Çeviri tarayıcıdan DEĞİL buradan çıkar: CSP `connect-src 'self'` sayfanın
+  // Google'a çıkmasını engelliyor. Yan fayda: API anahtarı hiç tarayıcıya inmez.
+  app.post('/local-api/translate', csrf, async (req, res) => {
+    const session = req.localSession;
+    if (!session.remoteToken) return res.status(401).json({ error: 'Yönetim oturumu gerekli.' });
+
+    const group = String(req.body?.group || '');
+    try {
+      const values = await translator.translate(group, req.body?.source);
+      res.json({ group, values });
+    } catch (error) {
+      res.status(errorStatus(error, 502)).json({ error: error.message, hint: error.hint || '' });
     }
   });
 

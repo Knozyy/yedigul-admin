@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Modal from '../components/Modal.jsx';
 import ProductGallery from '../components/ProductGallery.jsx';
+import TranslateButton from '../components/TranslateButton.jsx';
 import { tasi } from '../lib/reorder.js';
 import {
   MAX_IMAGES,
@@ -45,12 +46,24 @@ function formValue(product, categories) {
   };
 }
 
-function TranslationFields({ form, set }) {
+/** Blok başlığı + sağında Çevir. VariantEditor'daki .editor-heading deseni. */
+function BlockHeading({ title, hint, group, form, patch }) {
+  return (
+    <div className="editor-heading">
+      <div><h3>{title}</h3>{hint && <p className="form-hint">{hint}</p>}</div>
+      <TranslateButton group={group} source={form[`${group}_tr`]} onDone={patch} />
+    </div>
+  );
+}
+
+function TranslationFields({ form, set, patch }) {
   return (
     <>
       <div className="language-block">
-        <h3>Ürün adları</h3>
-        <p className="form-hint">Arapça veya Rusça boşsa menü İngilizceyi, o da boşsa Türkçeyi gösterir.</p>
+        <BlockHeading
+          title="Ürün adları" group="name" form={form} patch={patch}
+          hint="Arapça veya Rusça boşsa menü İngilizceyi, o da boşsa Türkçeyi gösterir."
+        />
         <div className="form-grid two">
           <label className="field"><span>Türkçe *</span><input lang="tr" value={form.name_tr} onChange={(event) => set('name_tr', event.target.value)} required /></label>
           <label className="field"><span>İngilizce *</span><input lang="en" value={form.name_en} onChange={(event) => set('name_en', event.target.value)} required /></label>
@@ -59,7 +72,7 @@ function TranslationFields({ form, set }) {
         </div>
       </div>
       <div className="language-block">
-        <h3>Açıklamalar</h3>
+        <BlockHeading title="Açıklamalar" group="desc" form={form} patch={patch} />
         <div className="form-grid two">
           <label className="field"><span>Türkçe</span><textarea lang="tr" value={form.desc_tr} onChange={(event) => set('desc_tr', event.target.value)} /></label>
           <label className="field"><span>İngilizce</span><textarea lang="en" value={form.desc_en} onChange={(event) => set('desc_en', event.target.value)} /></label>
@@ -71,22 +84,31 @@ function TranslationFields({ form, set }) {
   );
 }
 
-function ContentFields({ form, set }) {
+// İçindekiler ile alerjenler AYRI bloklar: ikisi ayrı çeviri grubu, her birinin
+// kendi düğmesi olmalı. Blok başına 8 yerine 4 alan da daha okunur.
+function ContentFields({ form, set, patch }) {
+  const AYIRICI = 'Birden fazla değeri virgülle veya yeni satırla ayırın.';
   return (
-    <div className="language-block">
-      <h3>İçindekiler ve alerjenler</h3>
-      <p className="form-hint">Birden fazla değeri virgülle veya yeni satırla ayırın.</p>
-      <div className="form-grid two">
-        <label className="field"><span>İçindekiler (TR)</span><textarea lang="tr" value={form.ing_tr} onChange={(event) => set('ing_tr', event.target.value)} /></label>
-        <label className="field"><span>Ingredients (EN)</span><textarea lang="en" value={form.ing_en} onChange={(event) => set('ing_en', event.target.value)} /></label>
-        <label className="field"><span>İçindekiler (AR)</span><textarea lang="ar" dir="rtl" value={form.ing_ar} onChange={(event) => set('ing_ar', event.target.value)} /></label>
-        <label className="field"><span>İçindekiler (RU)</span><textarea lang="ru" value={form.ing_ru} onChange={(event) => set('ing_ru', event.target.value)} /></label>
-        <label className="field"><span>Alerjenler (TR)</span><textarea lang="tr" value={form.alg_tr} onChange={(event) => set('alg_tr', event.target.value)} /></label>
-        <label className="field"><span>Allergens (EN)</span><textarea lang="en" value={form.alg_en} onChange={(event) => set('alg_en', event.target.value)} /></label>
-        <label className="field"><span>Alerjenler (AR)</span><textarea lang="ar" dir="rtl" value={form.alg_ar} onChange={(event) => set('alg_ar', event.target.value)} /></label>
-        <label className="field"><span>Alerjenler (RU)</span><textarea lang="ru" value={form.alg_ru} onChange={(event) => set('alg_ru', event.target.value)} /></label>
+    <>
+      <div className="language-block">
+        <BlockHeading title="İçindekiler" group="ing" form={form} patch={patch} hint={AYIRICI} />
+        <div className="form-grid two">
+          <label className="field"><span>Türkçe</span><textarea lang="tr" value={form.ing_tr} onChange={(event) => set('ing_tr', event.target.value)} /></label>
+          <label className="field"><span>İngilizce</span><textarea lang="en" value={form.ing_en} onChange={(event) => set('ing_en', event.target.value)} /></label>
+          <label className="field"><span>Arapça</span><textarea lang="ar" dir="rtl" value={form.ing_ar} onChange={(event) => set('ing_ar', event.target.value)} /></label>
+          <label className="field"><span>Rusça</span><textarea lang="ru" value={form.ing_ru} onChange={(event) => set('ing_ru', event.target.value)} /></label>
+        </div>
       </div>
-    </div>
+      <div className="language-block">
+        <BlockHeading title="Alerjenler" group="alg" form={form} patch={patch} hint={AYIRICI} />
+        <div className="form-grid two">
+          <label className="field"><span>Türkçe</span><textarea lang="tr" value={form.alg_tr} onChange={(event) => set('alg_tr', event.target.value)} /></label>
+          <label className="field"><span>İngilizce</span><textarea lang="en" value={form.alg_en} onChange={(event) => set('alg_en', event.target.value)} /></label>
+          <label className="field"><span>Arapça</span><textarea lang="ar" dir="rtl" value={form.alg_ar} onChange={(event) => set('alg_ar', event.target.value)} /></label>
+          <label className="field"><span>Rusça</span><textarea lang="ru" value={form.alg_ru} onChange={(event) => set('alg_ru', event.target.value)} /></label>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -122,7 +144,9 @@ function ProductForm({ product, categories, onClose, onSave, onDelete, request, 
   const [pendingImages, setPendingImages] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const set = (key, value) => setForm((old) => ({ ...old, [key]: value }));
+  // Çeviri üç alanı birden doldurur; set() tek anahtarlık hâli.
+  const patch = (values) => setForm((old) => ({ ...old, ...values }));
+  const set = (key, value) => patch({ [key]: value });
 
   async function submit(event) {
     event.preventDefault();
@@ -163,8 +187,8 @@ function ProductForm({ product, categories, onClose, onSave, onDelete, request, 
         <label className="field"><span>Menü sırası</span><input type="number" value={form.sort} onChange={(event) => set('sort', event.target.value)} /></label>
       </div>
 
-      <TranslationFields form={form} set={set} />
-      <ContentFields form={form} set={set} />
+      <TranslationFields form={form} set={set} patch={patch} />
+      <ContentFields form={form} set={set} patch={patch} />
 
       <div className="form-grid three">
         <label className="field"><span>{form.is_market_price ? 'Günün fiyatı (TL)' : 'Fiyat (TL)'}</span><input type="number" min="0" step="0.01" disabled={!form.is_market_price && form.variants.length > 0} value={form.price} onChange={(event) => set('price', event.target.value)} /><small>{form.is_market_price ? 'Boşsa menüde “Piyasa Fiyatı” görünür.' : form.variants.length ? 'Seçenek fiyatları kullanılıyor.' : ''}</small></label>

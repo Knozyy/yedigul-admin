@@ -60,6 +60,13 @@ export function loadConfig(env = process.env) {
       apiKey: String(env.PLACES_API_KEY || '').trim(),
       placeId: String(env.PLACES_PLACE_ID || '').trim(),
     }),
+    // Ürün formundaki "Çevir" düğmeleri. Anahtar boşsa düğmeler hiç görünmez;
+    // panelin geri kalanı etkilenmez.
+    gemini: Object.freeze({
+      apiKey: String(env.GEMINI_API_KEY || '').trim(),
+      // Model adları hızlı değişiyor — sürüm atlayınca kod değil .env güncellensin.
+      model: String(env.GEMINI_MODEL || '').trim() || 'gemini-2.5-flash-lite',
+    }),
   });
 }
 

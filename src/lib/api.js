@@ -1,7 +1,16 @@
 let csrfToken = '';
 
+// Oturum boyunca değişmeyen bir bayrak. Dört seviye prop olarak taşımak yerine
+// csrf ile aynı modül durumunda duruyor — anahtarın kendisi değil, yalnızca
+// "Çevir düğmesi çizilsin mi" bilgisi.
+let translateEnabled = false;
+
 function setCsrf(value) {
   csrfToken = String(value || '');
+}
+
+export function translationEnabled() {
+  return translateEnabled;
 }
 
 async function request(method, path, body) {
@@ -37,6 +46,7 @@ export const api = {
   async bootstrap() {
     const data = await request('GET', '/bootstrap');
     setCsrf(data.csrf);
+    translateEnabled = Boolean(data.translate);
     return data;
   },
   get: (path) => request('GET', path),
