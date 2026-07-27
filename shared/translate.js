@@ -62,7 +62,12 @@ export function systemInstruction(group) {
     'Açıklama, parantez içi not veya alternatif çeviri ekleme.',
     'Bir öğenin içinde virgül KULLANMA.',
     'Arapça için diakritiksiz Modern Standart Arapça kullan.',
-    'Yerleşmiş yemek adlarını (rakı, meze, börek gibi) olduğu gibi bırak veya hedef dilde yerleşmiş karşılığını kullan.',
+    // Marka adının hedef dilde karşılığı YOKTUR. Harf çevirisi de olmaz:
+    // misafir şişedeki etiketi arıyor, "إيفيس" ile "Efes"i eşleştiremez.
+    'MARKA VE ÖZEL ADLARI ÇEVİRME, HARF ÇEVİRİSİ DE YAPMA (Efes, Kızılca, Yeni Rakı, Kızılay, Coca-Cola, Tekirdağ gibi).',
+    'Bunları Arapça ve Rusça çıktıda da Türkçedeki gibi LATİN harfleriyle, harfi harfine aynı bırak.',
+    'Ürünün etiketteki tam adı markanın parçasıdır, bölme ("Kızılay Soda" tek parça kalır).',
+    'Yerleşmiş yemek adları (rakı, meze, börek) marka değildir: olduğu gibi bırak veya hedef dilde yerleşmiş karşılığını kullan.',
     list ? 'Bu alan bir malzeme/alerjen listesidir; her öğe kısa bir isim tamlamasıdır.' : '',
   ].filter(Boolean).join(' ');
 }

@@ -53,6 +53,19 @@ test('sistem yönergesi kaynağı, üç hedef dili ve sıra kuralını bildirir'
   assert.match(talimat, /sırasını BİREBİR koru/);
 });
 
+// Marka adının hedef dilde karşılığı yoktur. Yönerge güçlendirilmeden önce
+// model Arapça/Rusçada harf çevirisi yapıyordu (Efes → إيفيس / Эфес) ve
+// misafir şişedeki etiketle eşleştiremiyordu.
+test('sistem yönergesi marka adlarını çevirmeyi ve harf çevirisini yasaklar', () => {
+  const talimat = systemInstruction('ing');
+  assert.match(talimat, /MARKA/);
+  assert.match(talimat, /HARF ÇEVİRİSİ/);
+  assert.match(talimat, /LATİN/);
+  // Yasağın Arapça ve Rusça için de geçerli olduğu açıkça yazmalı: İngilizce
+  // zaten Latin, asıl kayan diller bunlar.
+  assert.match(talimat, /Arapça ve Rusça/);
+});
+
 test('yanıt çözülüp üç dile ayrılır', () => {
   const payload = yanit({ items: [
     UC_DIL('Sea bass', 'قاروص', 'Сибас'),
