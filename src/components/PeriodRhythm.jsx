@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import WeekRhythm from './WeekRhythm.jsx';
 import { PRESETS, coverageNote, rangeLength, resolvePreset } from '../../shared/period.js';
 import { api } from '../lib/api.js';
@@ -23,6 +23,7 @@ export default function PeriodRhythm({ days, firstDay }) {
   const [uzak, setUzak] = useState(null);
   const [busy, setBusy] = useState(false);
   const [hata, setHata] = useState('');
+  const istekSirasi = useRef(0);
 
   const varsayilan = preset === 'son4hafta';
   const aralik = preset === 'ozel'
@@ -30,26 +31,63 @@ export default function PeriodRhythm({ days, firstDay }) {
     : resolvePreset(preset, bugun());
 
   async function sec(id) {
+    // Önceki aralık isteği daha sonra dönerse yeni seçimi ezmemeli.
+    istekSirasi.current += 1;
     setPreset(id);
+    setBusy(false);
     setHata('');
     if (id === 'son4hafta' || id === 'ozel') { setUzak(null); return; }
     await getir(resolvePreset(id, bugun()));
   }
 
-  async function getir(hedef) {
+  const getir = useCallback(async (hedef) => {
     if (!hedef?.from || !hedef?.to) return;
-    if (hedef.from > hedef.to) { setHata('Başlangıç, bitişten sonra olamaz.'); return; }
+    if (hedef.from > hedef.to) {
+      istekSirasi.current += 1;
+      setBusy(false);
+      setUzak(null);
+      setHata('Başlangıç, bitişten sonra olamaz.');
+      return;
+    }
+
+    const buIstek = ++istekSirasi.current;
     setBusy(true); setHata('');
     try {
       const data = await api.get(`/admin/stats?from=${hedef.from}&to=${hedef.to}`);
+      if (buIstek !== istekSirasi.current) return;
       setUzak(data.days || []);
     } catch (error) {
+      if (buIstek !== istekSirasi.current) return;
       setHata(error.message);
       setUzak(null);
     } finally {
-      setBusy(false);
+      if (buIstek === istekSirasi.current) setBusy(false);
     }
-  }
+  }, []);
+
+  // Özel aralıkta tarih değişince eski seri ekranda kalmaz. İki tarih de
+  // hazır olduğunda kısa bir gecikmeyle yeni aralık otomatik olarak çekilir.
+  useEffect(() => {
+    if (preset !== 'ozel') return undefined;
+
+    istekSirasi.current += 1;
+    setUzak(null);
+    setHata('');
+
+    if (!ozel.from || !ozel.to) {
+      setBusy(false);
+      return undefined;
+    }
+    if (ozel.from > ozel.to) {
+      setBusy(false);
+      setHata('Başlangıç, bitişten sonra olamaz.');
+      return undefined;
+    }
+
+    setBusy(true);
+    const timer = setTimeout(() => getir({ ...ozel }), 300);
+    return () => clearTimeout(timer);
+  }, [getir, ozel.from, ozel.to, preset]);
 
   // Varsayılanda konektörün serisinden son 28 gün; gerisinde uzak yanıt.
   const seri = varsayilan ? days.slice(-28) : (uzak || []);
@@ -87,14 +125,16 @@ export default function PeriodRhythm({ days, firstDay }) {
               onChange={(e) => setOzel((o) => ({ ...o, to: e.target.value }))} /></label>
           <button type="button" className="secondary-button compact"
             disabled={busy || !ozel.from || !ozel.to}
-            onClick={() => getir(ozel)}>{busy ? 'Getiriliyor…' : 'Getir'}</button>
+            onClick={() => getir(ozel)}>{busy ? 'Yenileniyor…' : 'Yenile'}</button>
         </div>
       )}
 
-      <p className="form-hint">
-        {aralik && rangeLength(aralik.from, aralik.to) <= 70
-          ? 'Her gün kendi içinde: çubuklar o günün dönem içindeki tekrarları, yüzde son ikisini karşılaştırır.'
-          : 'Aralık uzun olduğu için günler zaman sırasında; hafta sonları altın.'}
+      <p className="form-hint period-chart-hint">
+        {!aralik
+          ? 'Tarihleri seçtiğinizde grafik otomatik yenilenir.'
+          : rangeLength(aralik.from, aralik.to) <= 70
+            ? 'Her nokta bir günün menü görüntülemesini gösterir; çizgi ve çubuk görünümü arasında geçiş yapabilirsiniz.'
+            : 'Uzun aralıklar okunabilirlik için haftalık toplamlar halinde gösterilir.'}
       </p>
 
       {hata && <div className="alert error">{hata}</div>}
@@ -102,12 +142,15 @@ export default function PeriodRhythm({ days, firstDay }) {
       {kapsam.state === 'none' ? (
         <p className="empty-text">{kapsam.message}</p>
       ) : busy ? (
-        <p className="empty-text">Getiriliyor…</p>
+        <p className="empty-text">Seçilen tarih aralığı yükleniyor…</p>
       ) : preset === 'ozel' && !uzak ? (
-        <p className="empty-text">Bir başlangıç ve bitiş tarihi seçip “Getir”e basın.</p>
+        <p className="empty-text">Grafiği görmek için başlangıç ve bitiş tarihi seçin.</p>
       ) : (
         <>
-          <WeekRhythm days={gorunen} />
+          <WeekRhythm
+            days={gorunen}
+            periodLabel={PRESETS.find((item) => item.id === preset)?.label || 'Seçili dönem'}
+          />
           {kapsam.state === 'partial' && <p className="split-note">{kapsam.message}</p>}
         </>
       )}

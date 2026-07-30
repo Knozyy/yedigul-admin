@@ -339,31 +339,88 @@ a { color: inherit; text-decoration: none; }
 .period-custom { display: flex; align-items: flex-end; gap: 11px; flex-wrap: wrap; margin-bottom: 13px; }
 .period-custom .field { flex: 0 1 165px; }
 
-/* B — haftanın günü panelleri. Renk büyüklük KODLAMAZ (eski ısı haritasının
-   asıl sorunu buydu); yükseklik kodlar, son çubuk koyu olduğu için "şu anki"
-   değer öne çıkar. */
-.wd-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 9px; }
-.wd-panel { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.wd-name { color: var(--muted); font-size: 10.5px; font-weight: 700; letter-spacing: .4px; }
-.wd-name.we { color: #a27b2f; }
-.wd-bars { width: 100%; height: 62px; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
-.wd-bars i { flex: 0 1 7px; min-width: 3px; display: block; background: #c3cdd6; border-radius: 2px 2px 0 0; transition: background .12s ease; }
-.wd-bars i.son { background: var(--ink); }
-.wd-bars:hover i { background: #aebbc6; }
-.wd-bars:hover i.son { background: var(--ink); }
-.wd-bos { color: #b9c1c7; font-size: 11px; align-self: center; }
-.wd-value { color: var(--ink); font-family: Georgia, serif; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
-.wd-delta { font-size: 9.5px; white-space: nowrap; }
-.wd-delta.up { color: var(--success); }
-.wd-delta.down { color: var(--danger); }
-.wd-delta.flat { color: var(--muted); }
+.period-chart-hint { margin-bottom: 14px; }
 
-/* C — kronolojik çubuk. Çubuklar flex ile esner; kova birimi ne olursa olsun
-   aynı kural, tek fark hafta sonu işaretinin yalnız günlükte olması. */
-.tl-bars { height: 84px; display: flex; align-items: flex-end; gap: 2px; }
-.tl-bars i { flex: 1 1 0; min-width: 2px; display: block; background: #8fa0ae; border-radius: 2px 2px 0 0; }
-.tl-bars i.we { background: var(--gold); }
-.tl-axis { margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; color: var(--muted); font-size: 10.5px; }
+/* 21st.dev Progress Metric Card yapısı, panelin krem/lacivert/altın yüzeyine
+   uyarlanır. Site istatistiği serisi ConnectorCard ile aynı erişilebilir maviyi
+   kullanır; durum renkleri yalnız artış/azalış anlamı taşır. */
+.progress-metric {
+  --metric-accent: #1d5fb0;
+  position: relative;
+  overflow: hidden;
+  min-height: 390px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 92% 9%, rgba(215,172,82,.16), transparent 34%),
+    linear-gradient(145deg, rgba(255,253,248,.98), rgba(244,239,229,.82));
+  color: var(--ink);
+  box-shadow: inset 0 1px rgba(255,255,255,.8), 0 17px 38px rgba(31,43,52,.055);
+}
+.progress-metric-top {
+  position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 18px; padding: 28px 29px 0;
+}
+.progress-metric-total { min-width: 0; }
+.progress-metric-label { display: flex; align-items: center; gap: 9px; color: var(--ink-2); font-size: 12px; font-weight: 650; }
+.progress-metric-total > strong {
+  display: block; margin-top: 15px; color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(46px, 7vw, 72px); font-weight: 500; letter-spacing: -3.8px; line-height: .95;
+  font-variant-numeric: tabular-nums;
+}
+.progress-view-toggle { display: inline-flex; padding: 2px; border: 1px solid var(--line); border-radius: 7px; background: rgba(255,253,248,.72); }
+.progress-view-toggle button {
+  width: 27px; height: 27px; padding: 5px; display: grid; place-items: center; border: 0; border-radius: 5px;
+  background: transparent; color: #89949d;
+}
+.progress-view-toggle button:hover { color: var(--ink); }
+.progress-view-toggle button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.progress-view-toggle button.active { background: var(--ink); color: #fff4df; box-shadow: 0 2px 7px rgba(11,34,57,.16); }
+.progress-view-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
+.progress-metric-trend { padding-top: 5px; display: flex; align-items: center; gap: 10px; font-size: 11px; }
+.progress-metric-trend b { font-size: 12px; font-weight: 750; }
+.progress-metric-trend b.up, .progress-metric-foot .up { color: var(--success); }
+.progress-metric-trend b.down, .progress-metric-foot .down { color: var(--danger); }
+.progress-metric-trend b.flat, .progress-metric-foot .flat { color: var(--muted); }
+.progress-metric-trend > span { color: var(--muted); }
+.progress-plot {
+  position: absolute; inset: 92px 0 49px 31%;
+  overflow: hidden;
+  background-image: radial-gradient(rgba(22,59,88,.13) .8px, transparent .8px);
+  background-size: 12px 12px;
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000);
+}
+.progress-plot::after {
+  content: ""; position: absolute; inset: auto 0 0; height: 1px; background: var(--line);
+}
+.progress-plot-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.progress-area { stroke: none; }
+.progress-line { fill: none; stroke: var(--metric-accent); stroke-width: 3; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 7px rgba(29,95,176,.14)); }
+.progress-bar { fill: rgba(29,95,176,.72); }
+.progress-guide { stroke: rgba(22,59,88,.28); stroke-width: 1; stroke-dasharray: 4 5; vector-effect: non-scaling-stroke; }
+.progress-point { fill: var(--paper); stroke: var(--metric-accent); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.progress-point.only { fill: var(--metric-accent); }
+.progress-hit-layer { position: absolute; inset: 0; }
+.progress-hit-layer button {
+  position: absolute; z-index: 2; padding: 0; border: 0; background: transparent; transform: translateX(-50%);
+}
+.progress-hit-layer button.bar-hit { min-height: 28px; border-radius: 5px 5px 2px 2px; }
+.progress-hit-layer button.line-hit { border-radius: 3px; }
+.progress-hit-layer button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; background: rgba(215,172,82,.09); }
+.progress-tooltip {
+  position: absolute; z-index: 3; top: 12px; min-width: 88px; padding: 7px 9px; display: grid; gap: 2px;
+  border: 1px solid var(--line); border-radius: 9px; background: rgba(255,253,248,.97);
+  box-shadow: 0 9px 20px rgba(11,34,57,.14); transform: translateX(-50%); pointer-events: none;
+}
+.progress-tooltip b { color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.progress-tooltip span { color: var(--muted); font-size: 9px; white-space: nowrap; }
+.progress-metric-foot {
+  position: absolute; z-index: 2; inset: auto 0 0; min-height: 49px; padding: 0 28px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 18px;
+  border-top: 1px solid var(--line); color: var(--muted); font-size: 10.5px;
+}
+.progress-metric-foot > span:first-child { margin-right: auto; font-weight: 700; }
+.progress-stat b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
 
 .conn-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .conn-card { display: flex; flex-direction: column; min-height: 176px; }
@@ -402,6 +459,12 @@ a { color: inherit; text-decoration: none; }
   .health-row { grid-template-columns: 1fr; }
   .health-row > div { border-right: 0; border-bottom: 1px solid var(--line); }
   .health-row > div:last-child { border-bottom: 0; }
+  .progress-metric { min-height: 430px; }
+  .progress-metric-top { padding: 22px 20px 0; }
+  .progress-metric-total > strong { font-size: 50px; letter-spacing: -2.7px; }
+  .progress-metric-trend { align-items: flex-end; flex-direction: column; gap: 3px; }
+  .progress-plot { inset: 145px 0 49px 0; mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent); }
+  .progress-metric-foot { padding-inline: 18px; gap: 12px; }
 }
 
 /* Dar ekranda bar ile ürün adı birbirini eziyor; ad ve sayı kalır.
